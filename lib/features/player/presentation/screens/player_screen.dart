@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import '../../../../core/services/youtube_service.dart';
 
 class PlayerScreen extends StatefulWidget {
-  final String videoId;
-  final String title;
-  final String artist;
-  final String coverUrl;
+  final MusicItem musicItem;
 
   const PlayerScreen({
     super.key,
-    required this.videoId,
-    required this.title,
-    required this.artist,
-    required this.coverUrl,
+    required this.musicItem,
   });
 
   @override
@@ -21,6 +16,9 @@ class PlayerScreen extends StatefulWidget {
 
 class _PlayerScreenState extends State<PlayerScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final YouTubeService _ytService = YouTubeService();
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -29,42 +27,160 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _initAudio() async {
-    // TODO: Fetch audio URL from youtube_service and play it
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Now Playing')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.network(widget.coverUrl, width: 200, height: 200),
-            const SizedBox(height: 20),
-            Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
-            Text(widget.artist, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(icon: const Icon(Icons.skip_previous), onPressed: () {}),
-                IconButton(
-                  icon: const Icon(Icons.play_arrow, size: 48),
-                  onPressed: () {},
-                ),
-                IconButton(icon: const Icon(Icons.skip_next), onPressed: () {}),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
+    try {
+      final audioSource = await _ytService.getAudioSource(widget.musicItem.id);
+      if (audioSource != null) {
+        await _audioPlayer.setAudioSource(audioSource);
+        _audioPlayer.play();
+      } else {
+        throw Exception('Gagal mendapatkan sumber audio.');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = 'Gagal memutar audio: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   void dispose() {
     _audioPlayer.dispose();
+    _ytService.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Sedang Diputar', style: TextStyle(fontSize: 16)),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Cover Art dengan bayangan subtle (Antislop R-12/13)
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFB8FF22).withValues(alpha: 0.1),
+                      blurRadius: 40,
+                      spreadRadius: 5,
+                      offset: const Offset(0, 10),
+                    )
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    widget.musicItem.thumbnailUrl,
+                    fit: BoxFit.cover,
+                    height: MediaQuery.of(context).size.width - 48,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 48),
+
+              // Title and Author
+              Text(
+                widget.musicItem.title,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.musicItem.author,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.white54,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 48),
+
+              // Player Controls
+              _buildPlayerControls(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerControls() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFB8FF22)),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          'Gagal memutar audio.',
+          style: TextStyle(color: Colors.redAccent),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return StreamBuilder<PlayerState>(
+      stream: _audioPlayer.playerStateStream,
+      builder: (context, snapshot) {
+        final playerState = snapshot.data;
+        final processingState = playerState?.processingState;
+        final playing = playerState?.playing;
+
+        if (processingState == ProcessingState.loading ||
+            processingState == ProcessingState.buffering) {
+          return const Center(
+            child: SizedBox(
+              width: 64,
+              height: 64,
+              child: CircularProgressIndicator(color: Color(0xFFB8FF22)),
+            ),
+          );
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Dummy button removed (Antislop C-2). Only real controls.
+            IconButton(
+              iconSize: 64,
+              color: const Color(0xFFB8FF22), // Luma Green Accent
+              icon: Icon(
+                playing == true ? Icons.pause_circle_filled : Icons.play_circle_filled,
+              ),
+              onPressed: () {
+                if (playing == true) {
+                  _audioPlayer.pause();
+                } else {
+                  _audioPlayer.play();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
