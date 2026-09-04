@@ -4,5 +4,7 @@
         <!-- Izinkan cleartext hanya ke localhost untuk StreamAudioSource just_audio -->
         <domain includeSubdomains="false">127.0.0.1</domain>
         <domain includeSubdomains="false">localhost</domain>
+        <!-- Izinkan cleartext ke proxy server Tailscale -->
+        <domain includeSubdomains="false">100.125.7.123</domain>
     </domain-config>
 </network-security-config>
