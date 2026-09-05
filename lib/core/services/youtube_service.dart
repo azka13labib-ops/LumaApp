@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class MusicItem {
@@ -20,7 +22,7 @@ class MusicItem {
 class YouTubeService {
   final YoutubeExplode _yt = YoutubeExplode();
 
-  /// Search for a song on YouTube Music
+  /// Search for a song on YouTube
   Future<List<MusicItem>> searchMusic(String query) async {
     try {
       final searchResults = await _yt.search.search(query);
@@ -40,142 +42,106 @@ class YouTubeService {
             ),
           )
           .toList();
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[LumaApp] Search error: $e');
+      debugPrint('[LumaApp] Search stackTrace: $stack');
       if (kIsWeb) return _getWebDummyData(query);
       rethrow;
     }
   }
 
-  /// Get an AudioSource that pipes audio directly via the youtube_explode_dart
-  /// HTTP client, avoiding 403 errors caused by URL signing mismatch.
-  Future<AudioSource?> getAudioSource(String videoId) async {
+  /// Downloads the full audio to a temp file using youtube_explode_dart's own
+  /// authenticated HTTP client, then plays from local file:// URI.
+  /// Falls back to Deezer 30-sec preview if YouTube rate-limits this IP.
+  Future<AudioSource?> getAudioSource(MusicItem item) async {
+    final videoId = item.id;
+
     if (videoId == 'dummy_web_id') {
       return AudioSource.uri(
-        Uri.parse(
-          'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        ),
+        Uri.parse('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
       );
     }
 
     try {
-      debugPrint('[LumaApp] Fetching manifest for video: $videoId');
+      debugPrint('[LumaApp] Fetching manifest for: $videoId');
       final manifest = await _yt.videos.streamsClient.getManifest(videoId);
-      final audioStreamInfo = manifest.audioOnly.withHighestBitrate();
 
-      // Start a local proxy server in Dart to fetch the stream
-      // This bypasses ExoPlayer's 403 blocks because Dart's HttpClient fetches it
-      final proxyUrl = await _startLocalProxy(
-        videoId,
-        audioStreamInfo.url.toString(),
+      // Prefer mp4/m4a for widest Android codec support
+      final audioInfo = manifest.audioOnly.firstWhere(
+        (s) => s.codec.mimeType.contains('mp4'),
+        orElse: () => manifest.audioOnly.withHighestBitrate(),
       );
-      debugPrint('[LumaApp] Local proxy URL ready: $proxyUrl');
 
-      return AudioSource.uri(Uri.parse(proxyUrl));
-    } catch (e) {
+      final ext = audioInfo.codec.mimeType.contains('mp4') ? 'm4a' : 'webm';
+      debugPrint(
+        '[LumaApp] Downloading ${audioInfo.size.totalBytes} bytes '
+        '(${audioInfo.codec.mimeType}) to temp file...',
+      );
+
+      // Reuse cached file if it's still fresh (< 30 min old)
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$videoId.$ext');
+      if (await file.exists()) {
+        final age = DateTime.now().difference((await file.stat()).modified);
+        if (age.inMinutes < 30) {
+          debugPrint('[LumaApp] Using cached file: ${file.path}');
+          return AudioSource.uri(Uri.file(file.path));
+        }
+        await file.delete();
+      }
+
+      // Stream audio bytes via youtube_explode_dart's own HTTP client
+      // (carries signed YouTube cookies — no 403)
+      final sink = file.openWrite();
+      await _yt.videos.streamsClient.get(audioInfo).pipe(sink);
+      await sink.flush();
+      await sink.close();
+
+      debugPrint('[LumaApp] Download complete: ${file.path}');
+      return AudioSource.uri(Uri.file(file.path));
+    } on RequestLimitExceededException {
+      // YouTube is rate-limiting this IP — fall back to Deezer 30-sec preview
+      debugPrint('[LumaApp] YouTube rate-limited. Falling back to Deezer preview...');
+      return _getDeezerFallback(item);
+    } catch (e, stack) {
       debugPrint('[LumaApp] Audio source error: $e');
+      debugPrint('[LumaApp] $stack');
       return null;
     }
   }
 
-  HttpServer? _localServer;
-
-  Future<String> _startLocalProxy(
-    String videoId,
-    String initialTargetUrl,
-  ) async {
-    // Tutup server lama jika ada
-    if (_localServer != null) {
-      await _localServer!.close();
+  /// Searches Deezer for a matching track and returns its 30-second preview.
+  Future<AudioSource?> _getDeezerFallback(MusicItem item) async {
+    try {
+      final q = Uri.encodeQueryComponent('${item.title} ${item.author}');
+      final client = HttpClient()..userAgent = 'Mozilla/5.0';
+      final req = await client.getUrl(
+        Uri.parse('https://api.deezer.com/search?q=$q&limit=1'),
+      );
+      final res = await req.close();
+      final body = await res.transform(const Utf8Decoder()).join();
+      client.close();
+      if (res.statusCode != 200) return null;
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      final data = json['data'] as List<dynamic>?;
+      if (data == null || data.isEmpty) return null;
+      final preview = data.first['preview'] as String?;
+      if (preview == null || preview.isEmpty) return null;
+      debugPrint('[LumaApp] Deezer fallback preview: $preview');
+      return AudioSource.uri(
+        Uri.parse(preview),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 11) Chrome/120',
+          'Referer': 'https://www.deezer.com/',
+        },
+      );
+    } catch (e) {
+      debugPrint('[LumaApp] Deezer fallback error: $e');
+      return null;
     }
-
-    _localServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final port = _localServer!.port;
-
-    _localServer!.listen((HttpRequest request) async {
-      final client = HttpClient()..autoUncompress = false;
-      try {
-        var targetUrl = initialTargetUrl;
-        var targetResponse = await _openStreamRequest(
-          client,
-          request,
-          targetUrl,
-        );
-
-        // Stream URLs from YouTube can expire or be rejected after the
-        // manifest was created. Refresh the manifest once before giving up.
-        if (targetResponse.statusCode == HttpStatus.forbidden) {
-          await targetResponse.drain();
-          final refreshedManifest = await _yt.videos.streamsClient.getManifest(
-            videoId,
-          );
-          targetUrl =
-              refreshedManifest.audioOnly.withHighestBitrate().url.toString();
-          targetResponse = await _openStreamRequest(client, request, targetUrl);
-        }
-
-        request.response.statusCode = targetResponse.statusCode;
-        final headersToForward = <String>{
-          HttpHeaders.acceptRangesHeader,
-          HttpHeaders.contentLengthHeader,
-          HttpHeaders.contentRangeHeader,
-          HttpHeaders.contentTypeHeader,
-          HttpHeaders.etagHeader,
-          HttpHeaders.lastModifiedHeader,
-        };
-        targetResponse.headers.forEach((name, values) {
-          if (headersToForward.contains(name.toLowerCase())) {
-            for (final value in values) {
-              request.response.headers.add(name, value);
-            }
-          }
-        });
-
-        if (request.method == 'HEAD') {
-          await targetResponse.drain();
-          await request.response.close();
-        } else {
-          await targetResponse.pipe(request.response);
-        }
-      } catch (e, stackTrace) {
-        debugPrint('[LumaApp] Proxy error: $e');
-        debugPrint('$stackTrace');
-        try {
-          request.response.statusCode = HttpStatus.badGateway;
-        } catch (_) {}
-        await request.response.close();
-      } finally {
-        client.close(force: true);
-      }
-    });
-
-    return 'http://127.0.0.1:$port/';
-  }
-
-  Future<HttpClientResponse> _openStreamRequest(
-    HttpClient client,
-    HttpRequest request,
-    String targetUrl,
-  ) async {
-    final targetRequest = await client.getUrl(Uri.parse(targetUrl));
-    targetRequest.headers
-      ..set(
-        HttpHeaders.userAgentHeader,
-        'Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36',
-      )
-      ..set(HttpHeaders.acceptHeader, '*/*')
-      ..set(HttpHeaders.acceptLanguageHeader, 'en-US,en;q=0.9')
-      ..set('referer', 'https://www.youtube.com/');
-
-    final range = request.headers.value(HttpHeaders.rangeHeader);
-    if (range != null) {
-      targetRequest.headers.set(HttpHeaders.rangeHeader, range);
-    }
-
-    return targetRequest.close();
   }
 
   void dispose() {
-    _localServer?.close(force: true);
     _yt.close();
   }
 
