@@ -28,7 +28,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Future<void> _initAudio() async {
     try {
-      final audioSource = await _ytService.getAudioSource(widget.musicItem.id);
+      final audioSource = await _ytService.getAudioSource(widget.musicItem);
       if (audioSource != null) {
         await _audioPlayer.setAudioSource(audioSource);
         _audioPlayer.play();
@@ -122,8 +122,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Widget _buildPlayerControls() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFB8FF22)),
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          CircularProgressIndicator(color: Color(0xFFB8FF22)),
+          SizedBox(height: 16),
+          Text(
+            'Mengunduh audio...',
+            style: TextStyle(color: Colors.white54, fontSize: 14),
+          ),
+        ],
       );
     }
 
