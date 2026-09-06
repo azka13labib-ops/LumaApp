@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/youtube_service.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../player/presentation/screens/player_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -11,153 +12,128 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final YouTubeService _ytService = YouTubeService();
-  final TextEditingController _searchController = TextEditingController();
-  
-  List<MusicItem> _searchResults = [];
-  bool _isLoading = false;
-  String? _errorMessage;
-  bool _hasSearched = false;
+  final TextEditingController _controller = TextEditingController();
+  List<MusicItem> _results = [];
+  bool _loading = false;
+  String? _error;
+  bool _searched = false;
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _controller.dispose();
     _ytService.dispose();
     super.dispose();
   }
 
-  Future<void> _performSearch(String query) async {
-    if (query.trim().isEmpty) return;
-    
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _hasSearched = true;
-    });
-
+  Future<void> _search(String q) async {
+    if (q.trim().isEmpty) return;
+    setState(() { _loading = true; _error = null; _searched = true; });
     try {
-      final results = await _ytService.searchMusic(query);
-      setState(() {
-        _searchResults = results;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal memuat hasil pencarian. Periksa koneksi Anda.';
-      });
+      final r = await _ytService.searchMusic(q);
+      setState(() => _results = r);
+    } catch (_) {
+      setState(() => _error = 'Gagal memuat hasil. Periksa koneksi Anda.');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: TextField(
-          controller: _searchController,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Cari lagu, artis, atau album...',
-            hintStyle: const TextStyle(color: Colors.white54),
-            border: InputBorder.none,
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.search, color: Color(0xFFB8FF22)),
-              onPressed: () => _performSearch(_searchController.text),
+        title: const Text('Cari Lagu'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: TextField(
+              controller: _controller,
+              textInputAction: TextInputAction.search,
+              onSubmitted: _search,
+              decoration: InputDecoration(
+                hintText: 'Judul, artis, atau penggalan lirik...',
+                prefixIcon: Icon(Icons.search, color: cs.onSurface.withValues(alpha: 0.4), size: 20),
+                suffixIcon: _controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.close, size: 18, color: cs.onSurface.withValues(alpha: 0.4)),
+                        onPressed: () { _controller.clear(); setState(() {}); },
+                      )
+                    : null,
+              ),
+              onChanged: (_) => setState(() {}),
             ),
           ),
-          onSubmitted: _performSearch,
-          textInputAction: TextInputAction.search,
         ),
       ),
-      body: _buildBody(),
+      body: _buildBody(cs, tt, isDark),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFFB8FF22),
-        ),
-      );
+  Widget _buildBody(ColorScheme cs, TextTheme tt, bool isDark) {
+    if (_loading) {
+      return Center(child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2));
     }
-
-    if (_errorMessage != null) {
+    if (_error != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Text(
-            _errorMessage!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.redAccent),
-          ),
+          padding: const EdgeInsets.all(32),
+          child: Text(_error!, textAlign: TextAlign.center, style: tt.bodyMedium),
         ),
       );
     }
-
-    if (!_hasSearched) {
-      return const Center(
+    if (!_searched) {
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(32),
           child: Text(
-            'Cari lagu atau artis favoritmu untuk mulai mendengarkan.',
+            'Ketik lagu, artis, atau lirik lagu favoritmu.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, fontSize: 16),
+            style: tt.bodyMedium,
           ),
         ),
       );
     }
-
-    if (_searchResults.isEmpty) {
-      return const Center(
-        child: Text(
-          'Tidak ada hasil yang ditemukan.',
-          style: TextStyle(color: Colors.white54),
-        ),
-      );
+    if (_results.isEmpty) {
+      return Center(child: Text('Tidak ada hasil ditemukan.', style: tt.bodyMedium));
     }
 
-    return ListView.builder(
-      itemCount: _searchResults.length,
+    return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemBuilder: (context, index) {
-        final video = _searchResults[index];
+      itemCount: _results.length,
+      separatorBuilder: (_, __) => const Divider(indent: 76, endIndent: 16, height: 1),
+      itemBuilder: (context, i) {
+        final item = _results[i];
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           leading: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(6),
             child: Image.network(
-              video.thumbnailUrl,
-              width: 56,
-              height: 56,
+              item.thumbnailUrl,
+              width: 48,
+              height: 48,
               fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 48, height: 48,
+                color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
+                child: Icon(Icons.music_note, size: 20, color: cs.primary),
+              ),
             ),
           ),
-          title: Text(
-            video.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, letterSpacing: -0.2)),
+          subtitle: Text(item.author, maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: Icon(Icons.chevron_right, size: 18, color: cs.onSurface.withValues(alpha: 0.3)),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PlayerScreen(playlist: _results, initialIndex: i),
+            ),
           ),
-          subtitle: Text(
-            video.author,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white54),
-          ),
-          onTap: () {
-            // Arahkan ke layar pemutar (akan dibuat selanjutnya)
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PlayerScreen(musicItem: video),
-              ),
-            );
-          },
         );
       },
     );
