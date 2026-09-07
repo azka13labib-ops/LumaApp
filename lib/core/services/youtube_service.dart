@@ -31,15 +31,16 @@ class YouTubeService {
     try {
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
       final encodedQuery = Uri.encodeComponent(query);
+      debugPrint('[LumaApp] Memulai pencarian di Spotify81 untuk: $query');
       final request = await client.getUrl(
         Uri.parse('https://$_host/search?q=$encodedQuery&type=tracks&limit=15'),
-      );
+      ).timeout(const Duration(seconds: 10));
       
       request.headers.set('x-rapidapi-host', _host);
       request.headers.set('x-rapidapi-key', _apiKey);
       
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
+      final response = await request.close().timeout(const Duration(seconds: 10));
+      final responseBody = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 10));
       client.close();
 
       if (response.statusCode == 200) {
@@ -105,13 +106,13 @@ class YouTubeService {
       final q = Uri.encodeComponent("${item.title} ${item.author}");
       final request = await client.getUrl(
         Uri.parse('https://$_host/download_track?q=$q'),
-      );
+      ).timeout(const Duration(seconds: 15));
       
       request.headers.set('x-rapidapi-host', _host);
       request.headers.set('x-rapidapi-key', _apiKey);
       
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
+      final response = await request.close().timeout(const Duration(seconds: 15));
+      final responseBody = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 15));
       client.close();
 
       if (response.statusCode == 200) {
