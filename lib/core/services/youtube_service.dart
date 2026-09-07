@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class MusicItem {
   final String id;
@@ -20,63 +21,31 @@ class MusicItem {
 }
 
 class YouTubeService {
-  final String _host = 'spotify81.p.rapidapi.com';
+  final String _host = 'youtube-mp36.p.rapidapi.com';
+  final YoutubeExplode _yt = YoutubeExplode();
   
   String get _apiKey {
     return dotenv.env['RAPIDAPI_KEY'] ?? '';
   }
 
-  /// Search for a song on Spotify81 API (RapidAPI)
+  /// Pencarian menggunakan YoutubeExplode (Gratis, Cepat, Tanpa Limit API)
   Future<List<MusicItem>> searchMusic(String query) async {
     try {
-      final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
-      final encodedQuery = Uri.encodeComponent(query);
-      debugPrint('[LumaApp] Memulai pencarian di Spotify81 untuk: $query');
-      final request = await client.getUrl(
-        Uri.parse('https://$_host/search?q=$encodedQuery&type=tracks&limit=15'),
-      ).timeout(const Duration(seconds: 10));
+      debugPrint('[LumaApp] Memulai pencarian di YouTube untuk: $query');
       
-      request.headers.set('x-rapidapi-host', _host);
-      request.headers.set('x-rapidapi-key', _apiKey);
+      final searchResults = await _yt.search.search(query);
       
-      final response = await request.close().timeout(const Duration(seconds: 10));
-      final responseBody = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 10));
-      client.close();
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(responseBody);
-        final List tracks = json['tracks'] ?? [];
-        
-        return tracks.map((item) {
-          final data = item['data'];
-          final String id = data['id'];
-          final String title = data['name'];
-          
-          String author = 'Unknown Artist';
-          if (data['artists'] != null && data['artists']['items'] != null && data['artists']['items'].isNotEmpty) {
-            author = data['artists']['items'][0]['profile']['name'] ?? 'Unknown Artist';
-          }
-          
-          String thumbnailUrl = '';
-          if (data['albumOfTrack'] != null && 
-              data['albumOfTrack']['coverArt'] != null && 
-              data['albumOfTrack']['coverArt']['sources'] != null && 
-              data['albumOfTrack']['coverArt']['sources'].isNotEmpty) {
-            thumbnailUrl = data['albumOfTrack']['coverArt']['sources'][0]['url'];
-          }
-
-          return MusicItem(
-            id: id,
-            title: title,
-            author: author,
-            thumbnailUrl: thumbnailUrl,
-          );
-        }).toList();
-      } else {
-        debugPrint('[LumaApp] Spotify81 Search Error: ${response.statusCode} - $responseBody');
-        if (kIsWeb) return _getWebDummyData(query);
-        throw Exception('Gagal mencari lagu (API Error)');
-      }
+      // Filter hanya video musik (biasanya durasinya wajar dan ada author)
+      return searchResults
+          .where((v) => v.duration != null && v.duration!.inMinutes < 15) // Abaikan video terlalu panjang
+          .map((video) {
+            return MusicItem(
+              id: video.id.value,
+              title: video.title,
+              author: video.author,
+              thumbnailUrl: video.thumbnails.highResUrl,
+            );
+          }).toList();
     } catch (e) {
       debugPrint('[LumaApp] Search exception: $e');
       if (kIsWeb) return _getWebDummyData(query);
@@ -84,7 +53,7 @@ class YouTubeService {
     }
   }
 
-  /// Mengambil Audio stream via Spotify81 download_track endpoint
+  /// Mengambil Audio stream via youtube-mp36 (Seperti screenshot User)
   Future<AudioSource?> getAudioSource(MusicItem item) async {
     if (item.id == 'dummy_web_id') {
       return AudioSource.uri(
@@ -100,42 +69,62 @@ class YouTubeService {
     }
 
     try {
-      debugPrint('[LumaApp] Fetching audio stream via Spotify81 for: ${item.title}');
+      debugPrint('[LumaApp] Fetching audio stream via youtube-mp36 untuk ID: ${item.id}');
       
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
-      final q = Uri.encodeComponent("${item.title} ${item.author}");
-      final request = await client.getUrl(
-        Uri.parse('https://$_host/download_track?q=$q'),
-      ).timeout(const Duration(seconds: 15));
       
-      request.headers.set('x-rapidapi-host', _host);
-      request.headers.set('x-rapidapi-key', _apiKey);
-      
-      final response = await request.close().timeout(const Duration(seconds: 15));
-      final responseBody = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 15));
-      client.close();
+      // Polling loop jika progress belum 100% (bisa memakan waktu beberapa detik di server)
+      for (int i = 0; i < 5; i++) {
+        final request = await client.getUrl(
+          Uri.parse('https://$_host/dl?id=${item.id}'),
+        ).timeout(const Duration(seconds: 20));
+        
+        request.headers.set('x-rapidapi-host', _host);
+        request.headers.set('x-rapidapi-key', _apiKey);
+        
+        final response = await request.close().timeout(const Duration(seconds: 20));
+        final responseBody = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 20));
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(responseBody);
-        if (json['youtube'] != null && json['youtube']['download'] != null) {
-          final streamUrl = json['youtube']['download']['url'];
+        if (response.statusCode == 200) {
+          final json = jsonDecode(responseBody);
           
-          return AudioSource.uri(
-            Uri.parse(streamUrl),
-            tag: MediaItem(
-              id: item.id,
-              album: 'LumaApp',
-              title: item.title,
-              artist: item.author,
-              artUri: Uri.parse(item.thumbnailUrl),
-            ),
-          );
+          // API merespons dengan link langsung jika sudah selesai diconvert
+          if (json['status'] == 'ok' && json['link'] != null && json['msg'] == 'success') {
+            final streamUrl = json['link'];
+            client.close();
+            
+            return AudioSource.uri(
+              Uri.parse(streamUrl),
+              tag: MediaItem(
+                id: item.id,
+                album: 'LumaApp',
+                title: item.title,
+                artist: item.author,
+                artUri: Uri.parse(item.thumbnailUrl),
+              ),
+            );
+          } else if (json['msg'] == 'in progress' || (json['progress'] != null && json['progress'] < 100)) {
+            // Jika sedang diproses, tunggu 3 detik lalu coba lagi
+            debugPrint('[LumaApp] youtube-mp36 sedang memproses (Progress: ${json['progress']}%). Menunggu 3 detik...');
+            await Future.delayed(const Duration(seconds: 3));
+            continue;
+          } else {
+             // Error dari API
+             throw Exception('Format response tidak valid dari youtube-mp36: $responseBody');
+          }
+        } else if (response.statusCode == 429) {
+          // Rate limited (Batas per menit API)
+          debugPrint('[LumaApp] Rate limited by youtube-mp36. Menunggu 3 detik...');
+          await Future.delayed(const Duration(seconds: 3));
+          continue;
         } else {
-          throw Exception('Format response tidak valid dari Spotify81: $responseBody');
+          throw Exception('youtube-mp36 Error: ${response.statusCode}');
         }
-      } else {
-        throw Exception('Spotify81 Download Error: ${response.statusCode}');
       }
+      
+      client.close();
+      throw Exception('Timeout saat memproses audio di youtube-mp36. Coba lagu lain.');
+      
     } catch (e) {
       debugPrint('[LumaApp] Stream extraction error: $e');
       throw Exception('Gagal mendapatkan stream audio: $e');
@@ -143,7 +132,7 @@ class YouTubeService {
   }
 
   void dispose() {
-    // nothing to close for httpclient since we close it per request
+    _yt.close();
   }
 
   List<MusicItem> _getWebDummyData(String query) {
