@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -51,8 +48,7 @@ class YouTubeService {
     }
   }
 
-  /// Mengambil Audio. 
-  /// Sepenuhnya menggunakan RapidAPI (youtube-mp36)
+  /// Mengambil Audio menggunakan YoutubeExplode
   Future<AudioSource?> getAudioSource(MusicItem item) async {
     final videoId = item.id;
 
@@ -70,49 +66,24 @@ class YouTubeService {
     }
 
     try {
-      debugPrint('[LumaApp] Mencoba RapidAPI (youtube-mp36) untuk: $videoId');
+      debugPrint('[LumaApp] Fetching audio stream via YoutubeExplode for: $videoId');
       
-      final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
-      final request = await client.getUrl(
-        Uri.parse('https://youtube-mp36.p.rapidapi.com/dl?id=$videoId'),
+      final manifest = await _yt.videos.streamsClient.getManifest(videoId);
+      final streamInfo = manifest.audioOnly.withHighestBitrate();
+      
+      return AudioSource.uri(
+        streamInfo.url,
+        tag: MediaItem(
+          id: item.id,
+          album: 'LumaApp',
+          title: item.title,
+          artist: item.author,
+          artUri: Uri.parse(item.thumbnailUrl),
+        ),
       );
-      
-      // Baca API Key dari .env (jangan hardcode â€” R-38)
-      final apiKey = dotenv.env['RAPIDAPI_KEY'] ?? '';
-      request.headers.set('x-rapidapi-host', 'youtube-mp36.p.rapidapi.com');
-      request.headers.set('x-rapidapi-key', apiKey);
-      
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      client.close();
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(responseBody);
-        
-        if (json['status'] == 'ok' && json['link'] != null) {
-          final streamUrl = json['link'];
-          debugPrint('[LumaApp] RapidAPI Sukses! Link MP3: $streamUrl');
-          return AudioSource.uri(
-            Uri.parse(streamUrl),
-            tag: MediaItem(
-              id: item.id,
-              album: 'LumaApp',
-              title: item.title,
-              artist: item.author,
-              artUri: Uri.parse(item.thumbnailUrl),
-            ),
-          );
-        } else {
-          debugPrint('[LumaApp] RapidAPI merespon tapi error: $responseBody');
-          throw Exception('Gagal mendapatkan link MP3 dari API.');
-        }
-      } else {
-        debugPrint('[LumaApp] RapidAPI gagal: ${response.statusCode} - $responseBody');
-        throw Exception('RapidAPI Error: ${response.statusCode}');
-      }
     } catch (e) {
-      debugPrint('[LumaApp] RapidAPI Exception: $e');
-      throw Exception('Gagal memutar audio melalui RapidAPI. Periksa kuota Anda.');
+      debugPrint('[LumaApp] Stream extraction error: $e');
+      throw Exception('Gagal mendapatkan stream audio: $e');
     }
   }
 
