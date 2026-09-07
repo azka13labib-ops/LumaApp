@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 56),
-              // Logo — focal point, accent used only on icon box
+              // Logo â€” focal point, accent used only on icon box
               Row(children: [
                 Container(
                   width: 44, height: 44,
@@ -149,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
 
-              // CTA — accent used only here as the primary action
+              // CTA â€” accent used only here as the primary action
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
