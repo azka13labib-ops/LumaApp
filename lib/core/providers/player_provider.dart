@@ -91,9 +91,10 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       isLoading: true,
       error: null,
     );
+    // Load audio first — side effects run after, errors there must NOT block playback
     await _loadAndPlay(queue[index]);
-    await _checkFavorite();
-    await _saveRecentlyPlayed(queue[index]);
+    _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
+    _saveRecentlyPlayed(queue[index]).catchError((e) => debugPrint('[Player] saveRecent: $e'));
   }
 
   Future<void> togglePlayPause() async {
@@ -111,8 +112,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       final i = state.currentIndex + 1;
       state = state.copyWith(currentIndex: i, current: state.queue[i], isLoading: true, error: null);
       await _loadAndPlay(state.queue[i]);
-      await _checkFavorite();
-      await _saveRecentlyPlayed(state.queue[i]);
+      _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
+      _saveRecentlyPlayed(state.queue[i]).catchError((e) => debugPrint('[Player] saveRecent: $e'));
     }
   }
 
@@ -125,8 +126,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       final i = state.currentIndex - 1;
       state = state.copyWith(currentIndex: i, current: state.queue[i], isLoading: true, error: null);
       await _loadAndPlay(state.queue[i]);
-      await _checkFavorite();
-      await _saveRecentlyPlayed(state.queue[i]);
+      _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
+      _saveRecentlyPlayed(state.queue[i]).catchError((e) => debugPrint('[Player] saveRecent: $e'));
     }
   }
 
@@ -147,8 +148,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
           'user_id': user.id,
           'youtube_id': state.current!.id,
           'title': state.current!.title,
-          'author': state.current!.author,
-          'thumbnail': state.current!.thumbnailUrl,
+          'artist': state.current!.author,
+          'cover_url': state.current!.thumbnailUrl,
         });
         if (mounted) state = state.copyWith(isFavorite: true);
       }
@@ -195,24 +196,20 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   Future<void> _saveRecentlyPlayed(MusicItem item) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
-    try {
-      // Hapus duplikat dulu
-      await Supabase.instance.client
-          .from('recently_played')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('youtube_id', item.id);
-      // Insert baru
-      await Supabase.instance.client.from('recently_played').insert({
-        'user_id': user.id,
-        'youtube_id': item.id,
-        'title': item.title,
-        'author': item.author,
-        'thumbnail': item.thumbnailUrl,
-      });
-    } catch (e) {
-      debugPrint('[Player] saveRecentlyPlayed error: $e');
-    }
+    // Delete duplicate first, then insert fresh entry
+    await Supabase.instance.client
+        .from('recently_played')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('youtube_id', item.id);
+    await Supabase.instance.client.from('recently_played').insert({
+      'user_id': user.id,
+      'youtube_id': item.id,
+      'title': item.title,
+      'artist': item.author,
+      'cover_url': item.thumbnailUrl,
+      'played_at': DateTime.now().toIso8601String(),
+    });
   }
 
   @override
