@@ -115,7 +115,7 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => _showAbout(context),
           ),
           _SettingsTile(
-            icon: Icons.bug_report_outline_rounded,
+            icon: Icons.bug_report_outlined,
             label: 'Laporkan Masalah',
             onTap: () {},
           ),
