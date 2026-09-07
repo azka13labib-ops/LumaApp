@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -19,17 +20,71 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _loading = true;
   String? _error;
   late int _idx;
-
-  MusicItem get _current => widget.playlist[_idx];
+  late MusicItem _current;
+  
+  bool _isFavorite = false;
 
   @override
   void initState() {
     super.initState();
     _idx = widget.initialIndex;
-    _load();
+    _current = widget.playlist[_idx];
+    _initAudio();
+    _checkFavorite();
   }
 
-  Future<void> _load() async {
+  Future<void> _checkFavorite() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+      
+      final data = await Supabase.instance.client
+          .from('liked_songs')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('youtube_id', _current.id)
+          .maybeSingle();
+          
+      if (mounted) setState(() => _isFavorite = data != null);
+    } catch (_) {
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login untuk menyimpan favorit')));
+        return;
+      }
+
+      if (_isFavorite) {
+        await Supabase.instance.client
+            .from('liked_songs')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('youtube_id', _current.id);
+        if (mounted) setState(() => _isFavorite = false);
+      } else {
+        await Supabase.instance.client
+            .from('liked_songs')
+            .insert({
+              'user_id': user.id,
+              'youtube_id': _current.id,
+              'title': _current.title,
+              'author': _current.author,
+              'thumbnail_url': _current.thumbnailUrl,
+            });
+        if (mounted) setState(() => _isFavorite = true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan favorit.')));
+      }
+    }
+  }
+
+  Future<void> _initAudio() async {
     if (mounted) setState(() { _loading = true; _error = null; });
     try {
       final src = await _yt.getAudioSource(_current);
@@ -46,8 +101,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void dispose() { _player.dispose(); _yt.dispose(); super.dispose(); }
 
-  void _next()     { if (_idx < widget.playlist.length - 1) { _idx++; _load(); } }
-  void _previous() { if (_idx > 0) { _idx--; _load(); } }
+  void _next()     { if (_idx < widget.playlist.length - 1) { _idx++; _current = widget.playlist[_idx]; _initAudio(); _checkFavorite(); } }
+  void _previous() { if (_idx > 0) { _idx--; _current = widget.playlist[_idx]; _initAudio(); _checkFavorite(); } }
 
   String _fmt(Duration d) =>
       '${d.inMinutes.remainder(60).toString().padLeft(2, '0')}:${d.inSeconds.remainder(60).toString().padLeft(2, '0')}';
@@ -130,10 +185,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ],
                     ),
                   ),
-                  // ponytail: placeholder heart — Favorites feature (DB not wired yet)
                   IconButton(
-                    icon: Icon(Icons.favorite_border, color: cs.onSurface.withValues(alpha: 0.35)),
-                    onPressed: () {}, // TODO: wire to Favorites DB
+                    icon: Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: _isFavorite ? Colors.redAccent : cs.onSurface.withValues(alpha: 0.35),
+                    ),
+                    onPressed: _toggleFavorite,
                   ),
                 ],
               ),
@@ -173,7 +230,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         children: [
           Text(_error!, style: const TextStyle(color: Colors.redAccent), textAlign: TextAlign.center),
           const SizedBox(height: 12),
-          TextButton(onPressed: _load, child: const Text('Coba Lagi')),
+          TextButton(onPressed: _initAudio, child: const Text('Coba Lagi')),
         ],
       );
     }
