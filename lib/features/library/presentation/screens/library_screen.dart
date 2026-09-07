@@ -1,120 +1,163 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/services/youtube_service.dart';
-import '../../../player/presentation/screens/player_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/youtube_service.dart';
+import '../../../../core/providers/player_provider.dart';
 
-class LibraryScreen extends StatefulWidget {
+class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
-  bool _isLoading = true;
-  List<MusicItem> _favorites = [];
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  final _supabase = Supabase.instance.client;
+  List<MusicItem> _likedSongs = [];
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchFavorites();
+    _fetchLikedSongs();
   }
 
-  Future<void> _fetchFavorites() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
+  Future<void> _fetchLikedSongs() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
 
-      final data = await Supabase.instance.client
+    try {
+      final res = await _supabase
           .from('liked_songs')
           .select()
+          .eq('user_id', user.id)
           .order('created_at', ascending: false);
 
-      setState(() {
-        _favorites = (data as List).map((row) => MusicItem(
-          id: row['youtube_id'],
-          title: row['title'],
-          author: row['author'],
-          thumbnailUrl: row['thumbnail_url'],
-        )).toList();
-      });
-    } catch (e) {
-      // Jika error (misal tabel belum dibuat), abaikan saja agar tidak crash
-      debugPrint('[LumaApp] Error fetching favorites: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+      final items = (res as List).map((e) => MusicItem(
+        id: e['youtube_id'],
+        title: e['title'],
+        author: e['author'],
+        thumbnailUrl: e['thumbnail'],
+      )).toList();
 
-  void _logout() async {
-    await Supabase.instance.client.auth.signOut();
-    // main.dart akan otomatis kembali ke LoginScreen
+      if (mounted) {
+        setState(() {
+          _likedSongs = items;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Library error: $e');
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    final user = _supabase.auth.currentUser;
+    final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
 
     return Scaffold(
+      backgroundColor: LumaColors.darkBg,
       appBar: AppBar(
-        title: const Text('Library Saya'),
+        backgroundColor: Colors.transparent,
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: LumaColors.darkSurface,
+              child: Text(initial, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 12),
+            const Text('Koleksi Kamu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+          ],
+        ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: cs.primary),
-            onPressed: _logout,
-            tooltip: 'Keluar',
-          ),
+          IconButton(icon: const Icon(Icons.search, color: Colors.white), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.add, color: Colors.white), onPressed: () {}),
         ],
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2))
-          : _favorites.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Text(
-                      'Belum ada lagu favorit.\nKlik tombol ❤️ pada pemutar musik untuk menambahkan.',
-                      textAlign: TextAlign.center,
-                      style: tt.bodyMedium,
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: LumaColors.accent))
+          : RefreshIndicator(
+              onRefresh: _fetchLikedSongs,
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 80),
+                children: [
+                  const SizedBox(height: 16),
+                  // Filter Chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        _buildChip('Playlist', true),
+                        const SizedBox(width: 8),
+                        _buildChip('Album', false),
+                      ],
                     ),
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _favorites.length,
-                  separatorBuilder: (_, __) => const Divider(indent: 76, endIndent: 16, height: 1),
-                  itemBuilder: (context, i) {
-                    final item = _favorites[i];
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Image.network(
-                          item.thumbnailUrl,
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
+                  const SizedBox(height: 16),
+                  
+                  // Liked Songs Pinned Item
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF450AF5), Color(0xFFC4EFD9)],
                         ),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      title: Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, letterSpacing: -0.2),
-                      ),
-                      subtitle: Text(item.author, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      trailing: const Icon(Icons.favorite, size: 18, color: Colors.redAccent),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PlayerScreen(playlist: _favorites, initialIndex: i),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      child: const Icon(Icons.favorite, color: Colors.white, size: 32),
+                    ),
+                    title: const Text('Lagu yang Disukai', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    subtitle: Text('${_likedSongs.length} lagu', style: const TextStyle(color: LumaColors.darkTextSecondary)),
+                    onTap: () {
+                      if (_likedSongs.isNotEmpty) {
+                        ref.read(playerProvider.notifier).play(_likedSongs, 0);
+                      }
+                    },
+                  ),
+                  
+                  // Playlists (dummy for now)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: Container(
+                      width: 64,
+                      height: 64,
+                      color: LumaColors.darkSurface,
+                      child: const Icon(Icons.music_note, color: Colors.white54, size: 32),
+                    ),
+                    title: const Text('Playlist Saya #1', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Playlist • Kamu', style: TextStyle(color: LumaColors.darkTextSecondary)),
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildChip(String label, bool isSelected) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isSelected ? LumaColors.accent : LumaColors.darkSurface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? Colors.white : LumaColors.darkTextPrimary,
+          fontSize: 13,
+        ),
+      ),
     );
   }
 }
