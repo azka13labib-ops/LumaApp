@@ -32,7 +32,7 @@ class YouTubeService {
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
       final encodedQuery = Uri.encodeComponent(query);
       final request = await client.getUrl(
-        Uri.parse('https://\/search?q=\&type=tracks&limit=15'),
+        Uri.parse('https://$_host/search?q=$encodedQuery&type=tracks&limit=15'),
       );
       
       request.headers.set('x-rapidapi-host', _host);
@@ -72,12 +72,12 @@ class YouTubeService {
           );
         }).toList();
       } else {
-        debugPrint('[LumaApp] Spotify81 Search Error: \ - \');
+        debugPrint('[LumaApp] Spotify81 Search Error: ${response.statusCode} - $responseBody');
         if (kIsWeb) return _getWebDummyData(query);
         throw Exception('Gagal mencari lagu (API Error)');
       }
     } catch (e) {
-      debugPrint('[LumaApp] Search exception: \');
+      debugPrint('[LumaApp] Search exception: $e');
       if (kIsWeb) return _getWebDummyData(query);
       rethrow;
     }
@@ -99,12 +99,12 @@ class YouTubeService {
     }
 
     try {
-      debugPrint('[LumaApp] Fetching audio stream via Spotify81 for: \');
+      debugPrint('[LumaApp] Fetching audio stream via Spotify81 for: ${item.title}');
       
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
-      final q = Uri.encodeComponent("\ \");
+      final q = Uri.encodeComponent("${item.title} ${item.author}");
       final request = await client.getUrl(
-        Uri.parse('https://\/download_track?q=\'),
+        Uri.parse('https://$_host/download_track?q=$q'),
       );
       
       request.headers.set('x-rapidapi-host', _host);
@@ -130,14 +130,14 @@ class YouTubeService {
             ),
           );
         } else {
-          throw Exception('Format response tidak valid dari Spotify81: \');
+          throw Exception('Format response tidak valid dari Spotify81: $responseBody');
         }
       } else {
-        throw Exception('Spotify81 Download Error: \');
+        throw Exception('Spotify81 Download Error: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('[LumaApp] Stream extraction error: \');
-      throw Exception('Gagal mendapatkan stream audio: \');
+      debugPrint('[LumaApp] Stream extraction error: $e');
+      throw Exception('Gagal mendapatkan stream audio: $e');
     }
   }
 
@@ -149,7 +149,7 @@ class YouTubeService {
     return [
       MusicItem(
         id: 'dummy_web_id',
-        title: '\ (Web Preview Mode)',
+        title: '$query (Web Preview Mode)',
         author: 'Luma Studio',
         thumbnailUrl:
             'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
