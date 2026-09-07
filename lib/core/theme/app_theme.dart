@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// ─── LumaApp Design Tokens ───────────────────────────────────────────────────
-// Accent: Royal Blue — used ONLY on interactive focal points (buttons, toggles,
+// â”€â”€â”€ LumaApp Design Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Accent: Royal Blue â€” used ONLY on interactive focal points (buttons, toggles,
 //   active seek bar, active lyric). Never as background decoration.
 // Rationale (R-29, R-31): 2 core neutrals + 1 accent. No extra colors.
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class LumaColors {
   LumaColors._();
 
-  // Accent — one deliberate accent, used sparingly (antislop Part 3)
+  // Accent â€” one deliberate accent, used sparingly (antislop Part 3)
   static const Color accent = Color(0xFF0055FF); // Royal Blue
 
   // Light Mode palette

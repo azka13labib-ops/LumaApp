@@ -77,7 +77,7 @@ class YouTubeService {
         Uri.parse('https://youtube-mp36.p.rapidapi.com/dl?id=$videoId'),
       );
       
-      // Baca API Key dari .env (jangan hardcode — R-38)
+      // Baca API Key dari .env (jangan hardcode â€” R-38)
       final apiKey = dotenv.env['RAPIDAPI_KEY'] ?? '';
       request.headers.set('x-rapidapi-host', 'youtube-mp36.p.rapidapi.com');
       request.headers.set('x-rapidapi-key', apiKey);
