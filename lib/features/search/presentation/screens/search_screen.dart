@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../player/presentation/screens/player_screen.dart';
+import '../../../library/presentation/screens/library_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -47,6 +48,15 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cari Lagu'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.library_music, color: cs.primary),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LibraryScreen()),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
