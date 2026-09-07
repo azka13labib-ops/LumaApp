@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class MusicItem {
@@ -58,6 +59,13 @@ class YouTubeService {
     if (videoId == 'dummy_web_id') {
       return AudioSource.uri(
         Uri.parse('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
+        tag: MediaItem(
+          id: item.id,
+          album: 'LumaApp',
+          title: item.title,
+          artist: item.author,
+          artUri: Uri.parse(item.thumbnailUrl),
+        ),
       );
     }
 
@@ -84,7 +92,16 @@ class YouTubeService {
         if (json['status'] == 'ok' && json['link'] != null) {
           final streamUrl = json['link'];
           debugPrint('[LumaApp] RapidAPI Sukses! Link MP3: $streamUrl');
-          return AudioSource.uri(Uri.parse(streamUrl));
+          return AudioSource.uri(
+            Uri.parse(streamUrl),
+            tag: MediaItem(
+              id: item.id,
+              album: 'LumaApp',
+              title: item.title,
+              artist: item.author,
+              artUri: Uri.parse(item.thumbnailUrl),
+            ),
+          );
         } else {
           debugPrint('[LumaApp] RapidAPI merespon tapi error: $responseBody');
           throw Exception('Gagal mendapatkan link MP3 dari API.');
