@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'core/theme/app_theme.dart';
 import 'package:luma_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:luma_app/features/home/presentation/screens/home_screen.dart';
@@ -21,16 +20,6 @@ void main() async {
     publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  try {
-    await JustAudioBackground.init(
-      androidNotificationChannelId: 'com.lumaapp.audio',
-      androidNotificationChannelName: 'LumaApp',
-      androidNotificationOngoing: true,
-      notificationColor: const Color(0xFF0055FF),
-    );
-  } catch (_) {
-    // Background audio unavailable
-  }
 
   runApp(
     const ProviderScope(
