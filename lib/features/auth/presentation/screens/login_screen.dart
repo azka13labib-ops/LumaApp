@@ -1,86 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../search/presentation/screens/search_screen.dart';
+import '../../../../core/theme/app_theme.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  
-  bool _isLoading = false;
-  String? _errorMessage;
-  bool _isLoginMode = true; // Toggle between Login and Register
+  final _emailCtrl = TextEditingController();
+  final _passCtrl  = TextEditingController();
+  bool _isLoading  = false;
+  bool _obscure    = true;
+  String? _error;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
-
-      if (email.isEmpty || password.isEmpty) {
-        throw const AuthException('Email dan password tidak boleh kosong');
-      }
-
-      if (_isLoginMode) {
-        await Supabase.instance.client.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-      } else {
-        await Supabase.instance.client.auth.signUp(
-          email: email,
-          password: password,
-        );
-      }
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const SearchScreen()),
-        );
-      }
-    } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (e) {
-      setState(() => _errorMessage = 'Terjadi kesalahan tidak terduga.');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  Future<void> _login() async {
+    final email = _emailCtrl.text.trim();
+    final pass  = _passCtrl.text;
+    if (email.isEmpty || pass.isEmpty) {
+      setState(() => _error = 'Email dan password wajib diisi.');
+      return;
     }
-  }
-
-  Future<void> _signInWithOAuth(OAuthProvider provider) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    
+    setState(() { _isLoading = true; _error = null; });
     try {
-      // Catatan: Membutuhkan konfigurasi OAuth Credentials di Google Cloud / Apple Developer
-      // dan menambahkannya ke Supabase Dashboard -> Authentication -> Providers
-      await Supabase.instance.client.auth.signInWithOAuth(
-        provider,
-        redirectTo: 'io.supabase.lumaapp://login-callback/', // Ganti dengan deep link app Anda
-      );
+      await Supabase.instance.client.auth.signInWithPassword(email: email, password: pass);
     } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (e) {
-      setState(() => _errorMessage = 'Otentikasi gagal. Pastikan konfigurasi provider di Supabase sudah benar.');
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = 'Terjadi kesalahan. Coba lagi.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -89,150 +45,141 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      backgroundColor: LumaColors.darkBg,
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.music_note, size: 64, color: Color(0xFFB8FF22)),
-                const SizedBox(height: 24),
-                Text(
-                  'LumaApp',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 56),
+              // Logo — focal point, accent used only on icon box
+              Row(children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(
+                    color: LumaColors.accent,
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: const Icon(Icons.music_note_rounded, color: Colors.white, size: 24),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _isLoginMode 
-                    ? 'Masuk ke akun Anda' 
-                    : 'Buat akun baru',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                
-                // R-27: Error State
-                if (_errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
-                    ),
-                    child: Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.redAccent),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                const SizedBox(width: 12),
+                const Text('Luma', style: TextStyle(
+                  color: LumaColors.darkTextPrimary, fontSize: 26,
+                  fontWeight: FontWeight.w700, letterSpacing: -0.6,
+                )),
+              ]),
+              const SizedBox(height: 48),
+              const Text('Masuk', style: TextStyle(
+                color: LumaColors.darkTextPrimary, fontSize: 32,
+                fontWeight: FontWeight.w700, letterSpacing: -0.8,
+              )),
+              const SizedBox(height: 6),
+              const Text('Putar musik favoritmu kapan saja.', style: TextStyle(
+                color: LumaColors.darkTextSecondary, fontSize: 15,
+              )),
+              const SizedBox(height: 36),
 
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+              if (_error != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2A1212),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF5C2020)),
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
+                  child: Row(children: [
+                    const Icon(Icons.error_outline_rounded, color: Color(0xFFFF6B6B), size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(_error!, style: const TextStyle(
+                      color: Color(0xFFFF6B6B), fontSize: 13,
+                    ))),
+                  ]),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _submit(), // R-32: Mendukung 'Enter'
-                ),
-                const SizedBox(height: 24),
-                
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submit,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(
-                            _isLoginMode ? 'Masuk' : 'Daftar',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                          setState(() {
-                            _isLoginMode = !_isLoginMode;
-                            _errorMessage = null;
-                          });
-                        },
-                  child: Text(
-                    _isLoginMode
-                        ? 'Belum punya akun? Daftar'
-                        : 'Sudah punya akun? Masuk',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                const Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.white24)),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('ATAU', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                    ),
-                    Expanded(child: Divider(color: Colors.white24)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                OutlinedButton.icon(
-                  onPressed: _isLoading ? null : () => _signInWithOAuth(OAuthProvider.google),
-                  icon: const Icon(Icons.g_mobiledata, size: 28),
-                  label: const Text('Lanjutkan dengan Google'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _isLoading ? null : () => _signInWithOAuth(OAuthProvider.apple),
-                  icon: const Icon(Icons.apple, size: 24),
-                  label: const Text('Lanjutkan dengan Apple'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
+                const SizedBox(height: 20),
               ],
-            ),
+
+              const Text('Email', style: TextStyle(
+                color: LumaColors.darkTextSecondary, fontSize: 13,
+                fontWeight: FontWeight.w500,
+              )),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                style: const TextStyle(color: LumaColors.darkTextPrimary, fontSize: 15),
+                cursorColor: LumaColors.accent,
+                decoration: InputDecoration(
+                  hintText: 'kamu@email.com',
+                  hintStyle: const TextStyle(color: LumaColors.darkTextSecondary),
+                  filled: true, fillColor: LumaColors.darkSurface,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: LumaColors.accent, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              const Text('Password', style: TextStyle(
+                color: LumaColors.darkTextSecondary, fontSize: 13,
+                fontWeight: FontWeight.w500,
+              )),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _passCtrl,
+                obscureText: _obscure,
+                style: const TextStyle(color: LumaColors.darkTextPrimary, fontSize: 15),
+                cursorColor: LumaColors.accent,
+                decoration: InputDecoration(
+                  hintText: 'Minimal 6 karakter',
+                  hintStyle: const TextStyle(color: LumaColors.darkTextSecondary),
+                  filled: true, fillColor: LumaColors.darkSurface,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      size: 20, color: LumaColors.darkTextSecondary,
+                    ),
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: LumaColors.accent, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // CTA — accent used only here as the primary action
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: LumaColors.accent,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    disabledBackgroundColor: const Color(0xFF003399),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                      : const Text('Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Text('Belum punya akun?', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14)),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                  child: const Text('Daftar', style: TextStyle(
+                    color: LumaColors.accent, fontSize: 14, fontWeight: FontWeight.w600,
+                  )),
+                ),
+              ]),
+              const SizedBox(height: 32),
+            ],
           ),
         ),
       ),
