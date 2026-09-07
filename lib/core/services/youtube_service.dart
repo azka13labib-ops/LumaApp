@@ -1,7 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class MusicItem {
   final String id;
@@ -18,41 +20,72 @@ class MusicItem {
 }
 
 class YouTubeService {
-  final YoutubeExplode _yt = YoutubeExplode();
+  final String _host = 'spotify81.p.rapidapi.com';
+  
+  String get _apiKey {
+    return dotenv.env['RAPIDAPI_KEY'] ?? '';
+  }
 
-  /// Search for a song on YouTube (Paling Akurat)
+  /// Search for a song on Spotify81 API (RapidAPI)
   Future<List<MusicItem>> searchMusic(String query) async {
     try {
-      final searchResults = await _yt.search.search(query);
-      final List<Video> videos = searchResults.toList();
+      final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+      final encodedQuery = Uri.encodeComponent(query);
+      final request = await client.getUrl(
+        Uri.parse('https://\/search?q=\&type=tracks&limit=15'),
+      );
+      
+      request.headers.set('x-rapidapi-host', _host);
+      request.headers.set('x-rapidapi-key', _apiKey);
+      
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+      client.close();
 
-      if (videos.isEmpty && kIsWeb) {
-        return _getWebDummyData(query);
+      if (response.statusCode == 200) {
+        final json = jsonDecode(responseBody);
+        final List tracks = json['tracks'] ?? [];
+        
+        return tracks.map((item) {
+          final data = item['data'];
+          final String id = data['id'];
+          final String title = data['name'];
+          
+          String author = 'Unknown Artist';
+          if (data['artists'] != null && data['artists']['items'] != null && data['artists']['items'].isNotEmpty) {
+            author = data['artists']['items'][0]['profile']['name'] ?? 'Unknown Artist';
+          }
+          
+          String thumbnailUrl = '';
+          if (data['albumOfTrack'] != null && 
+              data['albumOfTrack']['coverArt'] != null && 
+              data['albumOfTrack']['coverArt']['sources'] != null && 
+              data['albumOfTrack']['coverArt']['sources'].isNotEmpty) {
+            thumbnailUrl = data['albumOfTrack']['coverArt']['sources'][0]['url'];
+          }
+
+          return MusicItem(
+            id: id,
+            title: title,
+            author: author,
+            thumbnailUrl: thumbnailUrl,
+          );
+        }).toList();
+      } else {
+        debugPrint('[LumaApp] Spotify81 Search Error: \ - \');
+        if (kIsWeb) return _getWebDummyData(query);
+        throw Exception('Gagal mencari lagu (API Error)');
       }
-
-      return videos
-          .map(
-            (v) => MusicItem(
-              id: v.id.value,
-              title: v.title,
-              author: v.author,
-              thumbnailUrl: v.thumbnails.mediumResUrl,
-            ),
-          )
-          .toList();
-    } catch (e, stack) {
-      debugPrint('[LumaApp] Search error: $e');
-      debugPrint('[LumaApp] Search stackTrace: $stack');
+    } catch (e) {
+      debugPrint('[LumaApp] Search exception: \');
       if (kIsWeb) return _getWebDummyData(query);
       rethrow;
     }
   }
 
-  /// Mengambil Audio menggunakan YoutubeExplode
+  /// Mengambil Audio stream via Spotify81 download_track endpoint
   Future<AudioSource?> getAudioSource(MusicItem item) async {
-    final videoId = item.id;
-
-    if (videoId == 'dummy_web_id') {
+    if (item.id == 'dummy_web_id') {
       return AudioSource.uri(
         Uri.parse('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
         tag: MediaItem(
@@ -66,36 +99,57 @@ class YouTubeService {
     }
 
     try {
-      debugPrint('[LumaApp] Fetching audio stream via YoutubeExplode for: $videoId');
+      debugPrint('[LumaApp] Fetching audio stream via Spotify81 for: \');
       
-      final manifest = await _yt.videos.streamsClient.getManifest(videoId);
-      final streamInfo = manifest.audioOnly.withHighestBitrate();
-      
-      return AudioSource.uri(
-        streamInfo.url,
-        tag: MediaItem(
-          id: item.id,
-          album: 'LumaApp',
-          title: item.title,
-          artist: item.author,
-          artUri: Uri.parse(item.thumbnailUrl),
-        ),
+      final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+      final q = Uri.encodeComponent("\ \");
+      final request = await client.getUrl(
+        Uri.parse('https://\/download_track?q=\'),
       );
+      
+      request.headers.set('x-rapidapi-host', _host);
+      request.headers.set('x-rapidapi-key', _apiKey);
+      
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+      client.close();
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(responseBody);
+        if (json['youtube'] != null && json['youtube']['download'] != null) {
+          final streamUrl = json['youtube']['download']['url'];
+          
+          return AudioSource.uri(
+            Uri.parse(streamUrl),
+            tag: MediaItem(
+              id: item.id,
+              album: 'LumaApp',
+              title: item.title,
+              artist: item.author,
+              artUri: Uri.parse(item.thumbnailUrl),
+            ),
+          );
+        } else {
+          throw Exception('Format response tidak valid dari Spotify81: \');
+        }
+      } else {
+        throw Exception('Spotify81 Download Error: \');
+      }
     } catch (e) {
-      debugPrint('[LumaApp] Stream extraction error: $e');
-      throw Exception('Gagal mendapatkan stream audio: $e');
+      debugPrint('[LumaApp] Stream extraction error: \');
+      throw Exception('Gagal mendapatkan stream audio: \');
     }
   }
 
   void dispose() {
-    _yt.close();
+    // nothing to close for httpclient since we close it per request
   }
 
   List<MusicItem> _getWebDummyData(String query) {
     return [
       MusicItem(
         id: 'dummy_web_id',
-        title: '$query (Web Preview Mode)',
+        title: '\ (Web Preview Mode)',
         author: 'Luma Studio',
         thumbnailUrl:
             'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
