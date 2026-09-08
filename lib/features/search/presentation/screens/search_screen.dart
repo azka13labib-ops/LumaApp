@@ -65,9 +65,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Gagal: $e'), backgroundColor: Colors.red.shade900, behavior: SnackBarBehavior.floating,
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Gagal: $e'), backgroundColor: Colors.red.shade900, behavior: SnackBarBehavior.floating,
+        ));
+      }
     }
   }
 
