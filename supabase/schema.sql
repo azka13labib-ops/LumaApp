@@ -98,6 +98,7 @@ CREATE POLICY "Users can delete items from own playlists" ON public.playlist_ite
 -- Liked Songs: Private, hanya user login yang bisa melihat, menambah, atau menghapus lagunya sendiri
 CREATE POLICY "Users can view own liked songs" ON public.liked_songs FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can add liked songs" ON public.liked_songs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own liked songs" ON public.liked_songs FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can remove liked songs" ON public.liked_songs FOR DELETE USING (auth.uid() = user_id);
 
 -- 4. Trigger Create Profile Otomatis saat Register (Opsional, tapi sangat disarankan)

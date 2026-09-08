@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
+import '../../../player/presentation/widgets/play_shuffle_bar.dart';
+import '../../../player/presentation/widgets/track_row.dart';
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   const PlaylistDetailScreen({super.key, required this.playlist});
@@ -31,14 +33,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           .from('playlist_items')
           .select()
           .eq('playlist_id', widget.playlist['id'])
-          .order('created_at');
+          .order('added_at');
 
       _songs = (res as List)
-          .map((e) => MusicItem(
-                id: e['youtube_id'] ?? '',
-                title: e['title'] ?? 'Unknown',
-                author: e['artist'] ?? e['author'] ?? 'Unknown Artist',
-                thumbnailUrl: e['cover_url'] ?? e['thumbnail'] ?? '',
+          .map((e) => MusicItem.fromMap(
+                Map<String, dynamic>.from(e as Map),
+                missingTitle: 'Unknown',
+                missingArtist: 'Unknown Artist',
               ))
           .toList();
     } catch (e) {
@@ -145,45 +146,12 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           // ── Play Controls ──
           if (!_loading && _songs.isNotEmpty)
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: LumaColors.accent,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                        icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                        label: const Text('Putar Semua',
-                            style:
-                                TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                        onPressed: () =>
-                            ref.read(playerProvider.notifier).play(_songs, 0),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white24),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                      icon: const Icon(Icons.shuffle_rounded, size: 18),
-                      label: const Text('Acak', style: TextStyle(fontSize: 14)),
-                      onPressed: () {
-                        final shuffled = List<MusicItem>.from(_songs)..shuffle();
-                        ref.read(playerProvider.notifier).play(shuffled, 0);
-                      },
-                    ),
-                  ],
-                ),
+              child: PlayShuffleBar(
+                onPlayAll: () => ref.read(playerProvider.notifier).play(_songs, 0),
+                onShuffle: () {
+                  final shuffled = List<MusicItem>.from(_songs)..shuffle();
+                  ref.read(playerProvider.notifier).play(shuffled, 0);
+                },
               ),
             ),
 
@@ -233,18 +201,22 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
                     final item = _songs[i];
-                    return _SongTile(
+                    return TrackRow(
                       item: item,
                       onTap: () =>
                           ref.read(playerProvider.notifier).play(_songs, i),
-                      onRemove: () async {
-                        await _supabase
-                            .from('playlist_items')
-                            .delete()
-                            .eq('playlist_id', widget.playlist['id'])
-                            .eq('youtube_id', item.id);
-                        _fetchSongs();
-                      },
+                      trailing: IconButton(
+                        icon: const Icon(Icons.remove_circle_outline_rounded,
+                            color: Colors.white24, size: 20),
+                        onPressed: () async {
+                          await _supabase
+                              .from('playlist_items')
+                              .delete()
+                              .eq('playlist_id', widget.playlist['id'])
+                              .eq('youtube_id', item.id);
+                          _fetchSongs();
+                        },
+                      ),
                     );
                   },
                   childCount: _songs.length,
@@ -252,69 +224,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _SongTile extends StatelessWidget {
-  const _SongTile(
-      {required this.item, required this.onTap, required this.onRemove});
-  final MusicItem item;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: Image.network(
-                item.thumbnailUrl,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                    width: 48,
-                    height: 48,
-                    color: LumaColors.darkSurface,
-                    child: const Icon(Icons.music_note,
-                        color: Colors.white30, size: 20)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text(item.author,
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline_rounded,
-                  color: Colors.white24, size: 20),
-              onPressed: onRemove,
-            ),
-          ],
-        ),
       ),
     );
   }

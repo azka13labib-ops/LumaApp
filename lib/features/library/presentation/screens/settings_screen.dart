@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import 'downloads_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -91,9 +92,13 @@ class SettingsScreen extends StatelessWidget {
           _SettingsTile(
             icon: Icons.downloading_rounded,
             label: 'Unduhan',
-            subtitle: 'Segera hadir',
-            onTap: () {},
-            disabled: true,
+            subtitle: 'Lagu tersimpan di perangkat',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DownloadsScreen()),
+              );
+            },
           ),
 
           const SizedBox(height: 8),

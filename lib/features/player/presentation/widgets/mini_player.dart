@@ -9,102 +9,160 @@ class MiniPlayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerProvider);
+    final ps = ref.watch(playerProvider);
+    if (!ps.hasTrack) return const SizedBox.shrink();
 
-    if (!playerState.hasTrack) return const SizedBox.shrink();
+    final item = ps.current!;
 
-    final item = playerState.current!;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
           context,
           PageRouteBuilder(
             pageBuilder: (_, __, ___) => const PlayerScreen(),
-            transitionsBuilder: (_, anim, __, child) =>
-                SlideTransition(position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(anim), child: child),
+            transitionsBuilder: (_, anim, __, child) => SlideTransition(
+              position:
+                  Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                      .animate(CurvedAnimation(
+                          parent: anim, curve: Curves.easeOut)),
+              child: child,
+            ),
           ),
-        );
-      },
-      child: Container(
-        height: 64,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: LumaColors.darkSurface,
-          borderRadius: BorderRadius.circular(8),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(
-                        item.thumbnailUrl,
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(width: 40, height: 40, color: Colors.grey),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            item.title,
-                            style: const TextStyle(color: LumaColors.darkTextPrimary, fontSize: 13, fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            color: LumaColors.darkSurface,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    children: [
+                      // Artwork — consistent with list tile size
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.network(
+                          item.thumbnailUrl,
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 44,
+                            height: 44,
+                            color: const Color(0xFF222222),
+                            child: const Icon(Icons.music_note_rounded,
+                                color: Colors.white24, size: 20),
                           ),
-                          Text(
-                            item.author,
-                            style: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        playerState.isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: playerState.isFavorite ? LumaColors.accent : LumaColors.darkTextPrimary,
-                        size: 22,
-                      ),
-                      onPressed: () => ref.read(playerProvider.notifier).toggleFavorite(),
-                    ),
-                    IconButton(
-                      icon: playerState.isLoading
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
-                          : Icon(
-                              playerState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                              color: LumaColors.darkTextPrimary,
-                              size: 28,
+                      const SizedBox(width: 12),
+                      // Title + artist
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              item.title,
+                              style: const TextStyle(
+                                color: LumaColors.darkTextPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                      onPressed: () => ref.read(playerProvider.notifier).togglePlayPause(),
-                    ),
-                  ],
+                            Text(
+                              item.author,
+                              style: const TextStyle(
+                                color: LumaColors.darkTextSecondary,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Like — 44×44 touch target
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            ps.isFavorite
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            color: ps.isFavorite
+                                ? LumaColors.accent
+                                : LumaColors.darkTextPrimary,
+                            size: 20,
+                          ),
+                          onPressed: () =>
+                              ref.read(playerProvider.notifier).toggleFavorite(),
+                        ),
+                      ),
+                      // Play/Pause — 44×44 touch target
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: ps.isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white54))
+                              : Icon(
+                                  ps.isPlaying
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  color: LumaColors.darkTextPrimary,
+                                  size: 28,
+                                ),
+                          onPressed: () =>
+                              ref.read(playerProvider.notifier).togglePlayPause(),
+                        ),
+                      ),
+                      // Next
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(Icons.skip_next_rounded,
+                              color: Colors.white70, size: 24),
+                          onPressed: () =>
+                              ref.read(playerProvider.notifier).next(),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            // Progress Bar
-            if (playerState.duration.inMilliseconds > 0)
-              LinearProgressIndicator(
-                value: playerState.position.inMilliseconds / playerState.duration.inMilliseconds,
-                backgroundColor: LumaColors.darkDivider,
-                valueColor: const AlwaysStoppedAnimation<Color>(LumaColors.accent),
-                minHeight: 2,
-              )
-            else
-              const SizedBox(height: 2),
-          ],
+              // Progress bar — 2px at very bottom
+              if (ps.duration.inMilliseconds > 0)
+                LinearProgressIndicator(
+                  value: ps.position.inMilliseconds /
+                      ps.duration.inMilliseconds,
+                  backgroundColor: Colors.white12,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Colors.white54),
+                  minHeight: 2,
+                )
+              else
+                const SizedBox(height: 2),
+            ],
+          ),
         ),
       ),
     );

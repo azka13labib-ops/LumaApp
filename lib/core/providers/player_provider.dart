@@ -1,10 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../services/offline_cache_service.dart';
 import '../services/youtube_service.dart';
 
-// --- Models ------------------------------------------------------------------
+enum RepeatMode { off, all, one }
 
 class PlayerState {
   final MusicItem? current;
@@ -15,7 +19,11 @@ class PlayerState {
   final Duration position;
   final Duration duration;
   final bool isFavorite;
+  final bool isShuffled;
+  final RepeatMode repeatMode;
+  final bool isCached;
   final String? error;
+  final String? loadingStatus; // e.g. "Mengambil audio…", "Menyiapkan pemutar…"
 
   const PlayerState({
     this.current,
@@ -26,7 +34,11 @@ class PlayerState {
     this.position = Duration.zero,
     this.duration = Duration.zero,
     this.isFavorite = false,
+    this.isShuffled = false,
+    this.repeatMode = RepeatMode.off,
+    this.isCached = false,
     this.error,
+    this.loadingStatus,
   });
 
   PlayerState copyWith({
@@ -38,7 +50,13 @@ class PlayerState {
     Duration? position,
     Duration? duration,
     bool? isFavorite,
+    bool? isShuffled,
+    RepeatMode? repeatMode,
+    bool? isCached,
     String? error,
+    String? loadingStatus,
+    bool clearError = false,
+    bool clearLoadingStatus = false,
   }) {
     return PlayerState(
       current: current ?? this.current,
@@ -49,18 +67,30 @@ class PlayerState {
       position: position ?? this.position,
       duration: duration ?? this.duration,
       isFavorite: isFavorite ?? this.isFavorite,
-      error: error,
+      isShuffled: isShuffled ?? this.isShuffled,
+      repeatMode: repeatMode ?? this.repeatMode,
+      isCached: isCached ?? this.isCached,
+      error: clearError ? null : (error ?? this.error),
+      loadingStatus:
+          clearLoadingStatus ? null : (loadingStatus ?? this.loadingStatus),
     );
   }
 
   bool get hasTrack => current != null;
 }
 
-// --- Notifier -----------------------------------------------------------------
-
 class PlayerNotifier extends StateNotifier<PlayerState> {
   final AudioPlayer _player = AudioPlayer();
   final YouTubeService _yt = YouTubeService();
+  final _rng = Random();
+
+  /// Monotonically increasing counter. Each call to _loadAndPlay captures
+  /// the current value; if a newer load starts before we finish, we abort
+  /// the stale operation silently. Replaces a CancelToken.
+  int _loadId = 0;
+
+  /// Original order before shuffle (restored when shuffle turns off).
+  List<MusicItem> _orderBackup = [];
 
   PlayerNotifier() : super(const PlayerState()) {
     _player.playingStream.listen((playing) {
@@ -75,7 +105,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     _player.playerStateStream.listen((ps) {
       if (!mounted) return;
       if (ps.processingState == ProcessingState.completed) {
-        _playNext();
+        _onTrackCompleted();
       }
     });
   }
@@ -83,17 +113,21 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   // -- Public API --------------------------------------------------------------
 
   Future<void> play(List<MusicItem> queue, int index) async {
+    if (queue.isEmpty || index < 0 || index >= queue.length) return;
+    _orderBackup = List<MusicItem>.from(queue);
     state = state.copyWith(
       queue: queue,
       currentIndex: index,
       current: queue[index],
       isLoading: true,
-      error: null,
+      isShuffled: false,
+      clearError: true,
+      loadingStatus: 'Mengambil audio…',
     );
-    // Load audio first — side effects run after, errors there must NOT block playback
     await _loadAndPlay(queue[index]);
     _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
-    _saveRecentlyPlayed(queue[index]).catchError((e) => debugPrint('[Player] saveRecent: $e'));
+    _saveRecentlyPlayed(queue[index])
+        .catchError((e) => debugPrint('[Player] saveRecent: $e'));
   }
 
   Future<void> togglePlayPause() async {
@@ -107,12 +141,14 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   Future<void> seekTo(Duration pos) => _player.seek(pos);
 
   Future<void> next() async {
+    if (state.queue.isEmpty) return;
+
     if (state.currentIndex < state.queue.length - 1) {
-      final i = state.currentIndex + 1;
-      state = state.copyWith(currentIndex: i, current: state.queue[i], isLoading: true, error: null);
-      await _loadAndPlay(state.queue[i]);
-      _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
-      _saveRecentlyPlayed(state.queue[i]).catchError((e) => debugPrint('[Player] saveRecent: $e'));
+      await _playAt(state.currentIndex + 1);
+    } else if (state.repeatMode == RepeatMode.all) {
+      await _playAt(0);
+    } else {
+      await _autoplayFromLibrary();
     }
   }
 
@@ -122,12 +158,108 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       return;
     }
     if (state.currentIndex > 0) {
-      final i = state.currentIndex - 1;
-      state = state.copyWith(currentIndex: i, current: state.queue[i], isLoading: true, error: null);
-      await _loadAndPlay(state.queue[i]);
-      _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
-      _saveRecentlyPlayed(state.queue[i]).catchError((e) => debugPrint('[Player] saveRecent: $e'));
+      await _playAt(state.currentIndex - 1);
+    } else if (state.repeatMode == RepeatMode.all && state.queue.isNotEmpty) {
+      await _playAt(state.queue.length - 1);
+    } else {
+      await _player.seek(Duration.zero);
     }
+  }
+
+  void toggleShuffle() {
+    if (state.queue.isEmpty || state.current == null) return;
+
+    if (state.isShuffled) {
+      final currentId = state.current!.id;
+      final restored = _orderBackup.isNotEmpty
+          ? List<MusicItem>.from(_orderBackup)
+          : List<MusicItem>.from(state.queue);
+      var idx = restored.indexWhere((t) => t.id == currentId);
+      if (idx < 0) idx = 0;
+      state = state.copyWith(queue: restored, currentIndex: idx, isShuffled: false);
+    } else {
+      _orderBackup = List<MusicItem>.from(state.queue);
+      final current = state.current!;
+      final rest = state.queue.where((t) => t.id != current.id).toList()..shuffle(_rng);
+      final shuffled = [current, ...rest];
+      state = state.copyWith(queue: shuffled, currentIndex: 0, isShuffled: true);
+    }
+  }
+
+  void cycleRepeat() {
+    final next = switch (state.repeatMode) {
+      RepeatMode.off => RepeatMode.all,
+      RepeatMode.all => RepeatMode.one,
+      RepeatMode.one => RepeatMode.off,
+    };
+    state = state.copyWith(repeatMode: next);
+  }
+
+  /// Insert after the current track (Spotify-style "Play next").
+  void playNext(MusicItem item) {
+    if (state.queue.isEmpty || state.current == null) {
+      play([item], 0);
+      return;
+    }
+    final q = List<MusicItem>.from(state.queue);
+    q.insert(state.currentIndex + 1, item);
+    if (!state.isShuffled) {
+      _orderBackup = List<MusicItem>.from(q);
+    }
+    state = state.copyWith(queue: q);
+  }
+
+  void addToQueue(MusicItem item) {
+    if (state.queue.isEmpty) {
+      play([item], 0);
+      return;
+    }
+    final q = List<MusicItem>.from(state.queue)..add(item);
+    if (!state.isShuffled) {
+      _orderBackup = List<MusicItem>.from(q);
+    }
+    state = state.copyWith(queue: q);
+  }
+
+  void removeFromQueue(int index) {
+    if (index < 0 || index >= state.queue.length) return;
+    if (index == state.currentIndex) return;
+
+    final q = List<MusicItem>.from(state.queue)..removeAt(index);
+    var newIndex = state.currentIndex;
+    if (index < state.currentIndex) newIndex -= 1;
+    if (!state.isShuffled) {
+      _orderBackup = List<MusicItem>.from(q);
+    }
+    state = state.copyWith(queue: q, currentIndex: newIndex);
+  }
+
+  void reorderQueue(int oldIndex, int newIndex) {
+    if (oldIndex == newIndex) return;
+    if (oldIndex < 0 || oldIndex >= state.queue.length) return;
+
+    var target = newIndex;
+    if (oldIndex < target) target -= 1;
+    if (target < 0 || target >= state.queue.length) return;
+
+    final q = List<MusicItem>.from(state.queue);
+    final item = q.removeAt(oldIndex);
+    q.insert(target, item);
+
+    final currentId = state.current?.id;
+    var newCurrent = q.indexWhere((t) => t.id == currentId);
+    if (newCurrent < 0) newCurrent = 0;
+
+    if (!state.isShuffled) {
+      _orderBackup = List<MusicItem>.from(q);
+    }
+    state = state.copyWith(queue: q, currentIndex: newCurrent);
+  }
+
+  Future<void> jumpToQueueIndex(int index) async {
+    if (index < 0 || index >= state.queue.length) return;
+    if (index == state.currentIndex) return;
+    await _playAt(index);
   }
 
   Future<void> toggleFavorite() async {
@@ -157,25 +289,192 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     }
   }
 
-  // -- Private -----------------------------------------------------------------
-
-  Future<void> _loadAndPlay(MusicItem item) async {
+  Future<bool> downloadCurrent() async {
+    final item = state.current;
+    if (item == null) return false;
     try {
-      await _player.stop();
-      final source = await _yt.getAudioSource(item);
-      if (source == null) throw Exception('Tidak dapat memuat audio');
-      await _player.setAudioSource(source);
-      await _player.play();
-      if (mounted) state = state.copyWith(isLoading: false, error: null);
+      if (await OfflineCacheService.instance.isCached(item.id)) {
+        state = state.copyWith(isCached: true);
+        return true;
+      }
+      final url = await _yt.resolveStreamUrl(item);
+      if (url == null) return false;
+      await OfflineCacheService.instance.download(item, url);
+      if (mounted) state = state.copyWith(isCached: true);
+      return true;
     } catch (e) {
-      if (mounted) state = state.copyWith(isLoading: false, error: e.toString());
+      debugPrint('[Player] download error: $e');
+      return false;
     }
   }
 
-  Future<void> _playNext() async {
-    if (state.currentIndex < state.queue.length - 1) {
-      await next();
+  Future<bool> downloadTrack(MusicItem item) async {
+    try {
+      if (await OfflineCacheService.instance.isCached(item.id)) return true;
+      final url = await _yt.resolveStreamUrl(item);
+      if (url == null) return false;
+      await OfflineCacheService.instance.download(item, url);
+      if (mounted && state.current?.id == item.id) {
+        state = state.copyWith(isCached: true);
+      }
+      return true;
+    } catch (e) {
+      debugPrint('[Player] downloadTrack error: $e');
+      return false;
     }
+  }
+
+  // -- Private -----------------------------------------------------------------
+
+  Future<void> _playAt(int index) async {
+    state = state.copyWith(
+      currentIndex: index,
+      current: state.queue[index],
+      isLoading: true,
+      clearError: true,
+      loadingStatus: 'Mengambil audio…',
+    );
+    await _loadAndPlay(state.queue[index]);
+    _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
+    _saveRecentlyPlayed(state.queue[index])
+        .catchError((e) => debugPrint('[Player] saveRecent: $e'));
+  }
+
+  Future<void> _loadAndPlay(MusicItem item) async {
+    // Capture this load's token. Any subsequent call increments _loadId,
+    // making this one stale — we check and bail out before touching the player.
+    final myId = ++_loadId;
+
+    try {
+      // Stop whatever was playing first to release the platform player lock.
+      await _player.stop();
+
+      if (!mounted || myId != _loadId) return; // stale → abort silently
+
+      final cached = await OfflineCacheService.instance.isCached(item.id);
+
+      if (!mounted || myId != _loadId) return;
+
+      if (mounted) {
+        state = state.copyWith(loadingStatus: 'Menyiapkan pemutar…');
+      }
+
+      final source = await _yt.getAudioSource(item);
+
+      if (!mounted || myId != _loadId) return;
+
+      if (source == null) throw Exception('Tidak dapat memuat audio');
+
+      await _player.setAudioSource(source);
+
+      if (!mounted || myId != _loadId) return;
+
+      await _player.play();
+
+      if (mounted && myId == _loadId) {
+        state = state.copyWith(
+          isLoading: false,
+          isCached: cached,
+          clearError: true,
+          clearLoadingStatus: true,
+        );
+      }
+    } catch (e) {
+      // "Loading interrupted" is the just_audio message when a newer load
+      // preempts this one; it's expected & safe to ignore.
+      final isInterrupt = e.toString().contains('Loading interrupted') ||
+          e.toString().contains('interrupted');
+
+      if (!mounted) return;
+      if (myId != _loadId) return; // stale load, ignore
+
+      if (isInterrupt) {
+        // The player was taken over by a newer request — nothing to do.
+        return;
+      }
+
+      debugPrint('[Player] _loadAndPlay error: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Gagal memutar lagu.',
+        clearLoadingStatus: true,
+      );
+
+      // Auto-skip to next on playback failure (error prevention heuristic).
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted && state.error != null) {
+        _tryAutoSkipOnError();
+      }
+    }
+  }
+
+  void _tryAutoSkipOnError() {
+    if (state.queue.isEmpty) return;
+    if (state.currentIndex < state.queue.length - 1) {
+      debugPrint('[Player] Auto-skipping to next after error');
+      _playAt(state.currentIndex + 1);
+    }
+  }
+
+  Future<void> _onTrackCompleted() async {
+    if (state.repeatMode == RepeatMode.one) {
+      await _player.seek(Duration.zero);
+      await _player.play();
+      return;
+    }
+    await next();
+  }
+
+  /// When queue ends: pick a random liked / recent track.
+  Future<void> _autoplayFromLibrary() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    final pool = <MusicItem>[];
+
+    try {
+      final offline = await OfflineCacheService.instance.listCached();
+      pool.addAll(offline);
+
+      if (user != null) {
+        final liked = await Supabase.instance.client
+            .from('liked_songs')
+            .select()
+            .eq('user_id', user.id)
+            .limit(40);
+        for (final e in liked as List) {
+          pool.add(MusicItem.fromMap(Map<String, dynamic>.from(e as Map)));
+        }
+
+        final recent = await Supabase.instance.client
+            .from('recently_played')
+            .select()
+            .eq('user_id', user.id)
+            .order('played_at', ascending: false)
+            .limit(20);
+        for (final e in recent as List) {
+          pool.add(MusicItem.fromMap(Map<String, dynamic>.from(e as Map)));
+        }
+      }
+    } catch (e) {
+      debugPrint('[Player] autoplay pool error: $e');
+    }
+
+    final seen = <String>{};
+    final currentId = state.current?.id;
+    final candidates = <MusicItem>[];
+    for (final t in pool) {
+      if (t.id.isEmpty || t.id == currentId || seen.contains(t.id)) continue;
+      seen.add(t.id);
+      candidates.add(t);
+    }
+
+    if (candidates.isEmpty) {
+      debugPrint('[Player] autoplay: no library tracks');
+      return;
+    }
+
+    final pick = candidates[_rng.nextInt(candidates.length)];
+    debugPrint('[Player] autoplay → ${pick.title}');
+    await play([...state.queue, pick], state.queue.length);
   }
 
   Future<void> _checkFavorite() async {
@@ -184,7 +483,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     try {
       final data = await Supabase.instance.client
           .from('liked_songs')
-          .select('id')
+          .select('youtube_id')
           .eq('user_id', user.id)
           .eq('youtube_id', state.current!.id)
           .maybeSingle();
@@ -195,20 +494,23 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   Future<void> _saveRecentlyPlayed(MusicItem item) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
-    // Delete duplicate first, then insert fresh entry
-    await Supabase.instance.client
-        .from('recently_played')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('youtube_id', item.id);
-    await Supabase.instance.client.from('recently_played').insert({
-      'user_id': user.id,
-      'youtube_id': item.id,
-      'title': item.title,
-      'artist': item.author,
-      'cover_url': item.thumbnailUrl,
-      'played_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      await Supabase.instance.client
+          .from('recently_played')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('youtube_id', item.id);
+      await Supabase.instance.client.from('recently_played').insert({
+        'user_id': user.id,
+        'youtube_id': item.id,
+        'title': item.title,
+        'artist': item.author,
+        'cover_url': item.thumbnailUrl,
+        'played_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('[Player] saveRecentlyPlayed error: $e');
+    }
   }
 
   @override
@@ -218,8 +520,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     super.dispose();
   }
 }
-
-// --- Provider -----------------------------------------------------------------
 
 final playerProvider = StateNotifierProvider<PlayerNotifier, PlayerState>(
   (ref) => PlayerNotifier(),

@@ -1,9 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/player_provider.dart';
+import 'artist_screen.dart';
+import '../widgets/playlist_picker_sheet.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -76,7 +78,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       context: context,
       backgroundColor: const Color(0xFF111111),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
-      builder: (ctx) => _PlaylistPickerSheet(item: item, userId: user.id),
+      builder: (ctx) => PlaylistPickerSheet(item: item, userId: user.id),
     );
   }
 
@@ -125,7 +127,38 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             _OptionTile(icon: Icons.queue_music_rounded, label: 'Putar Berikutnya',
               onTap: () {
                 Navigator.pop(ctx);
-                ref.read(playerProvider.notifier).play([item, ...ref.read(playerProvider).queue], 0);
+                ref.read(playerProvider.notifier).playNext(item);
+              }),
+            _OptionTile(icon: Icons.playlist_play_rounded, label: 'Tambah ke Antrian',
+              onTap: () {
+                Navigator.pop(ctx);
+                ref.read(playerProvider.notifier).addToQueue(item);
+              }),
+            _OptionTile(icon: Icons.person_outline_rounded, label: 'Lihat Artis',
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ArtistScreen(artistName: item.author),
+                ));
+              }),
+            _OptionTile(icon: Icons.download_rounded, label: 'Unduh',
+              onTap: () async {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: const Text('Mengunduh…'),
+                  backgroundColor: LumaColors.darkSurface,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ));
+                final ok = await ref.read(playerProvider.notifier).downloadTrack(item);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(ok ? 'Berhasil diunduh' : 'Gagal mengunduh lagu'),
+                  backgroundColor: ok ? LumaColors.darkSurface : Colors.red.shade900,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ));
               }),
             const SizedBox(height: 8),
           ],
@@ -293,80 +326,6 @@ class _OptionTile extends StatelessWidget {
       leading: Icon(icon, color: Colors.white70, size: 22),
       title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 15)),
       onTap: onTap,
-    );
-  }
-}
-
-class _PlaylistPickerSheet extends StatelessWidget {
-  const _PlaylistPickerSheet({required this.item, required this.userId});
-  final MusicItem item;
-  final String userId;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(margin: const EdgeInsets.only(top: 12, bottom: 8), alignment: Alignment.center,
-            child: Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: Text('Tambah ke Playlist', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
-          ),
-          const Divider(height: 1, color: Color(0xFF2A2A2A)),
-          FutureBuilder(
-            future: Supabase.instance.client.from('playlists').select().eq('user_id', userId).order('created_at'),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: LumaColors.accent, strokeWidth: 2)));
-              }
-              if (snapshot.hasError) {
-                return Padding(padding: const EdgeInsets.all(24), child: Text('Gagal memuat playlist', style: TextStyle(color: Colors.red.shade300)));
-              }
-              final playlists = snapshot.data as List<dynamic>? ?? [];
-              if (playlists.isEmpty) {
-                return const Padding(padding: EdgeInsets.all(32), child: Center(child: Column(children: [
-                  Icon(Icons.playlist_add_rounded, color: Colors.white24, size: 40),
-                  SizedBox(height: 12),
-                  Text('Belum ada playlist.\nBuat playlist dari tab +', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14), textAlign: TextAlign.center),
-                ])));
-              }
-              return ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.only(bottom: 8),
-                itemCount: playlists.length,
-                itemBuilder: (context, i) {
-                  final p = playlists[i];
-                  return ListTile(
-                    leading: Container(width: 44, height: 44,
-                      decoration: BoxDecoration(color: LumaColors.darkSurface, borderRadius: BorderRadius.circular(4)),
-                      child: const Icon(Icons.queue_music_rounded, color: Colors.white38, size: 20)),
-                    title: Text(p['name'] ?? 'Playlist', style: const TextStyle(color: Colors.white, fontSize: 15)),
-                    onTap: () async {
-                      Navigator.pop(context);
-                      try {
-                        await Supabase.instance.client.from('playlist_items').insert({
-                          'playlist_id': p['id'], 'youtube_id': item.id, 'title': item.title, 'artist': item.author, 'cover_url': item.thumbnailUrl,
-                        });
-                        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('Ditambahkan ke ${p['name']}'), backgroundColor: LumaColors.darkSurface, behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ));
-                      } catch (e) {
-                        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('Gagal: $e'), backgroundColor: Colors.red.shade900, behavior: SnackBarBehavior.floating,
-                        ));
-                      }
-                    },
-                  );
-                },
-              );
-            },
-          ),
-        ],
-      ),
     );
   }
 }

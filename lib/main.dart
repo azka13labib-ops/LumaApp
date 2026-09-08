@@ -1,7 +1,11 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'core/theme/app_theme.dart';
 import 'package:luma_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:luma_app/features/home/presentation/screens/home_screen.dart';
@@ -13,13 +17,22 @@ import 'package:luma_app/features/player/presentation/widgets/mini_player.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await JustAudioBackground.init(
+      androidNotificationChannelId: 'com.ngodink.lumaapp.audio',
+      androidNotificationChannelName: 'Pemutaran musik',
+      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
+    );
+  }
+
   await dotenv.load(fileName: ".env");
-  
+
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-
 
   runApp(
     const ProviderScope(
@@ -99,42 +112,40 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          IndexedStack(
-            index: _currentIndex,
-            children: _screens,
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: MiniPlayer(),
-          ),
-        ],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == 4) {
-            // Tab Buat -> push screen khusus
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatePlaylistScreen()));
-            return;
-          }
-          setState(() => _currentIndex = index);
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: LumaColors.darkBg,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white54,
-        selectedFontSize: 10,
-        unselectedFontSize: 10,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Cari'),
-          BottomNavigationBarItem(icon: Icon(Icons.library_music), label: 'Koleksi'),
-          BottomNavigationBarItem(icon: Icon(Icons.workspace_premium), label: 'Premium'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_box_outlined), label: 'Buat'),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Mini player sits on top of the bottom nav — never clips list items
+          const MiniPlayer(),
+          BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              if (index == 4) {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const CreatePlaylistScreen()));
+                return;
+              }
+              setState(() => _currentIndex = index);
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: LumaColors.darkBg,
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Colors.white38,
+            selectedFontSize: 10,
+            unselectedFontSize: 10,
+            elevation: 0,
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Cari'),
+              BottomNavigationBarItem(icon: Icon(Icons.library_music_rounded), label: 'Koleksi'),
+              BottomNavigationBarItem(icon: Icon(Icons.workspace_premium_rounded), label: 'Premium'),
+              BottomNavigationBarItem(icon: Icon(Icons.add_box_outlined), label: 'Buat'),
+            ],
+          ),
         ],
       ),
     );

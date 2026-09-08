@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/youtube_service.dart';
-import '../../../../core/providers/player_provider.dart';
 import '../../../playlist/presentation/screens/create_playlist_screen.dart';
 import 'liked_songs_screen.dart';
 import 'playlist_detail_screen.dart';
@@ -52,14 +51,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           .from('liked_songs')
           .select()
           .eq('user_id', user.id)
-          .order('created_at', ascending: false);
+          .order('liked_at', ascending: false);
 
       _likedSongs = (res as List)
-          .map((e) => MusicItem(
-                id: e['youtube_id'] ?? '',
-                title: e['title'] ?? 'Unknown',
-                author: e['artist'] ?? e['author'] ?? 'Unknown Artist',
-                thumbnailUrl: e['cover_url'] ?? e['thumbnail'] ?? '',
+          .map((e) => MusicItem.fromMap(
+                Map<String, dynamic>.from(e as Map),
+                missingTitle: 'Unknown',
+                missingArtist: 'Unknown Artist',
               ))
           .toList();
     } catch (e) {

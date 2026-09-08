@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../search/presentation/screens/artist_screen.dart';
 
 // Design Read: Home feed for music app, ENERGY 2 / RHYTHM 2 / MOTION 1
 // Greeting dynamically reflects time-of-day. Accent used only on filter chip (focal point).
@@ -22,6 +23,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _supabase = Supabase.instance.client;
   List<MusicItem> _recentlyPlayed = [];
   List<MusicItem> _likedSongs = [];
+  List<String> _artists = [];
   bool _loading = true;
   String? _error;
 
@@ -54,19 +56,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           .limit(8);
 
       if (mounted) {
+        final recent = (recentRes as List)
+            .map((e) => MusicItem.fromMap(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        final liked = (likedRes as List)
+            .map((e) => MusicItem.fromMap(Map<String, dynamic>.from(e as Map)))
+            .toList();
+
+        // Light discovery: unique artists from library activity
+        final seen = <String>{};
+        final artists = <String>[];
+        for (final t in [...recent, ...liked]) {
+          final name = t.author.trim();
+          if (name.isEmpty) continue;
+          final key = name.toLowerCase();
+          if (seen.contains(key)) continue;
+          seen.add(key);
+          artists.add(name);
+          if (artists.length >= 12) break;
+        }
+
         setState(() {
-          _recentlyPlayed = (recentRes as List).map((e) => MusicItem(
-            id: e['youtube_id'] ?? '',
-            title: e['title'] ?? '',
-            author: e['artist'] ?? e['author'] ?? '',
-            thumbnailUrl: e['cover_url'] ?? e['thumbnail'] ?? '',
-          )).toList();
-          _likedSongs = (likedRes as List).map((e) => MusicItem(
-            id: e['youtube_id'] ?? '',
-            title: e['title'] ?? '',
-            author: e['artist'] ?? '',
-            thumbnailUrl: e['cover_url'] ?? '',
-          )).toList();
+          _recentlyPlayed = recent;
+          _likedSongs = liked;
+          _artists = artists;
           _loading = false;
         });
       }
@@ -236,6 +249,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   itemBuilder: (context, i) => _HorizontalCard(_likedSongs[i], onTap: () {
                     ref.read(playerProvider.notifier).play(_likedSongs, i);
                   }),
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+
+            // Artists from your activity
+            if (_artists.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Text('Artis untukmu',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+              ),
+              SizedBox(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _artists.length,
+                  itemBuilder: (context, i) {
+                    final name = _artists[i];
+                    return GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => ArtistScreen(artistName: name)),
+                      ),
+                      child: Container(
+                        width: 96,
+                        margin: const EdgeInsets.only(right: 14),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: LumaColors.darkSurface,
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
