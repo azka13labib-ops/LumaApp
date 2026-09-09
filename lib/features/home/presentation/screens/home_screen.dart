@@ -2,15 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
-
-// Design Read: Home feed for music app, ENERGY 2 / RHYTHM 2 / MOTION 1
-// Greeting dynamically reflects time-of-day. Accent used only on filter chip (focal point).
-// R-27: loading, empty, error states defined. R-03: bottom padding for mini player.
-// R-29: darkBg base, darkSurface for cards, accent for one active chip.
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +20,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<MusicItem> _recentlyPlayed = [];
   List<MusicItem> _likedSongs = [];
   List<String> _artists = [];
+  List<MusicItem> _cachedTracks = [];
   bool _loading = true;
+  bool _isOffline = false;
   String? _error;
 
   @override
@@ -55,6 +53,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           .order('liked_at', ascending: false)
           .limit(8);
 
+      final cached = await OfflineCacheService.instance.listCached();
+
       if (mounted) {
         final recent = (recentRes as List)
             .map((e) => MusicItem.fromMap(Map<String, dynamic>.from(e as Map)))
@@ -63,7 +63,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             .map((e) => MusicItem.fromMap(Map<String, dynamic>.from(e as Map)))
             .toList();
 
-        // Light discovery: unique artists from library activity
         final seen = <String>{};
         final artists = <String>[];
         for (final t in [...recent, ...liked]) {
@@ -80,12 +79,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _recentlyPlayed = recent;
           _likedSongs = liked;
           _artists = artists;
+          _cachedTracks = cached;
           _loading = false;
+          _error = null;
         });
       }
     } catch (e) {
       debugPrint('HomeScreen error: $e');
-      if (mounted) setState(() { _loading = false; _error = 'Gagal memuat data.'; });
+      final cached = await OfflineCacheService.instance.listCached();
+      if (mounted) {
+        setState(() {
+          _cachedTracks = cached;
+          _loading = false;
+          _error = null;
+          _isOffline = true;
+        });
+      }
     }
   }
 
@@ -107,6 +116,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Offline banner
+            if (_isOffline)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1A3A1A),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.wifi_off_rounded, color: Color(0xFF88FF88), size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Mode Offline — ${_cachedTracks.length} lagu tersedia',
+                      style: const TextStyle(color: Color(0xFF88FF88), fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
             // Top bar with greeting + avatar
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -122,12 +155,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       letterSpacing: -0.4,
                     ),
                   ),
-                  // Avatar — navigate to profile
                   GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen())),
                     child: CircleAvatar(
                       radius: 18,
-                      backgroundColor: LumaColors.darkSurface,
+                      backgroundColor: LumaColors.accent.withValues(alpha: 0.3),
                       child: Text(
                         initial,
                         style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
@@ -147,15 +180,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildBody() {
-    // R-27: loading state
     if (_loading) return const Center(child: CircularProgressIndicator(color: LumaColors.accent, strokeWidth: 2));
 
-    // R-27: error state
-    if (_error != null) {
+    if (_error != null && _cachedTracks.isEmpty && _recentlyPlayed.isEmpty && _likedSongs.isEmpty) {
       return Center(child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.cloud_off_rounded, color: Colors.white24, size: 48),
+          const Icon(Icons.headphones_rounded, color: Colors.white12, size: 64),
           const SizedBox(height: 16),
           Text(_error!, style: const TextStyle(color: Colors.white70, fontSize: 15), textAlign: TextAlign.center),
           const SizedBox(height: 16),
@@ -173,13 +204,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: LumaColors.darkSurface,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        // R-03: bottom padding for mini player + bottom nav bar
         padding: const EdgeInsets.only(bottom: 160),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // R-27: empty state — tell user what to do, not just "no data"
-            if (_recentlyPlayed.isEmpty && _likedSongs.isEmpty)
+            // Cached tracks indicator when offline
+            if (_isOffline && _cachedTracks.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Text('Tersimpan Offline',
+                  style: TextStyle(color: LumaColors.accent, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+              ),
+              SizedBox(
+                height: 140,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _cachedTracks.length,
+                  itemBuilder: (context, i) => _CachedCard(_cachedTracks[i], onTap: () {
+                    ref.read(playerProvider.notifier).play(_cachedTracks, i);
+                  }),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            if (_recentlyPlayed.isEmpty && _likedSongs.isEmpty && !(_isOffline && _cachedTracks.isNotEmpty))
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 48, 16, 16),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -190,35 +240,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ]),
               ),
 
-            // Recently played grid — only when data exists
             if (_recentlyPlayed.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 3.2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: _recentlyPlayed.length > 6 ? 6 : _recentlyPlayed.length,
-                  itemBuilder: (context, i) => _GridCard(_recentlyPlayed[i], onTap: () {
-                    ref.read(playerProvider.notifier).play(_recentlyPlayed, i);
-                  }),
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-
-            // Recently played horizontal list
-            if (_recentlyPlayed.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Text('Baru saja didengar',
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
               ),
+              const SizedBox(height: 8),
               SizedBox(
                 height: 168,
                 child: ListView.builder(
@@ -230,13 +258,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   }),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
             ],
 
-            // Liked songs horizontal list — separate section with distinct heading
             if (_likedSongs.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Text('Lagu Disukai',
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
               ),
@@ -251,18 +278,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   }),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
             ],
 
-            // Artists from your activity
             if (_artists.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Text('Artis untukmu',
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
               ),
               SizedBox(
-                height: 120,
+                height: 128,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -318,10 +344,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// Grid card — Spotify "recently played" 2-col grid style
-// R-31: darkSurface bg intentional for slight contrast vs. darkBg, radius 4 for consistency
-class _GridCard extends StatelessWidget {
-  const _GridCard(this.item, {required this.onTap});
+class _CachedCard extends StatelessWidget {
+  const _CachedCard(this.item, {required this.onTap});
   final MusicItem item;
   final VoidCallback onTap;
 
@@ -330,28 +354,36 @@ class _GridCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(
-          color: LumaColors.darkSurface,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Row(
+        width: 100,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.network(
-              item.thumbnailUrl,
-              width: 52, height: 52, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 52, height: 52, color: const Color(0xFF222222),
-                child: const Icon(Icons.music_note, color: Colors.white24, size: 20),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.network(
+                item.thumbnailUrl,
+                width: 100, height: 100, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 100, height: 100, color: LumaColors.darkSurface,
+                  child: const Icon(Icons.music_note, color: Colors.white24, size: 32),
+                ),
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(
-              item.title,
-              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-              maxLines: 2, overflow: TextOverflow.ellipsis,
-            )),
-            const SizedBox(width: 4),
+            const SizedBox(height: 6),
+            Text(item.title,
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A3A1A),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text('Offline',
+                style: TextStyle(color: Color(0xFF88FF88), fontSize: 9, fontWeight: FontWeight.w500),
+              ),
+            ),
           ],
         ),
       ),
@@ -359,8 +391,7 @@ class _GridCard extends StatelessWidget {
   }
 }
 
-// Horizontal card — album art + title + artist
-// R-03: 120dp width stays within any phone without overflow
+// Horizontal card
 class _HorizontalCard extends StatelessWidget {
   const _HorizontalCard(this.item, {required this.onTap});
   final MusicItem item;

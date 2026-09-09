@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/offline_cache_service.dart';
@@ -22,6 +23,8 @@ class PlayerState {
   final bool isShuffled;
   final RepeatMode repeatMode;
   final bool isCached;
+  final bool isDownloading;
+  final double? downloadingProgress;
   final String? error;
   final String? loadingStatus; // e.g. "Mengambil audio…", "Menyiapkan pemutar…"
 
@@ -37,6 +40,8 @@ class PlayerState {
     this.isShuffled = false,
     this.repeatMode = RepeatMode.off,
     this.isCached = false,
+    this.isDownloading = false,
+    this.downloadingProgress,
     this.error,
     this.loadingStatus,
   });
@@ -53,6 +58,8 @@ class PlayerState {
     bool? isShuffled,
     RepeatMode? repeatMode,
     bool? isCached,
+    bool? isDownloading,
+    double? downloadingProgress,
     String? error,
     String? loadingStatus,
     bool clearError = false,
@@ -70,6 +77,8 @@ class PlayerState {
       isShuffled: isShuffled ?? this.isShuffled,
       repeatMode: repeatMode ?? this.repeatMode,
       isCached: isCached ?? this.isCached,
+      isDownloading: isDownloading ?? this.isDownloading,
+      downloadingProgress: downloadingProgress ?? this.downloadingProgress,
       error: clearError ? null : (error ?? this.error),
       loadingStatus:
           clearLoadingStatus ? null : (loadingStatus ?? this.loadingStatus),
@@ -92,7 +101,20 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   /// Original order before shuffle (restored when shuffle turns off).
   List<MusicItem> _orderBackup = [];
 
+  // ponytail: 3-slot ConcatenatingAudioSource trick — keeps dummy slots at
+  // index 0 (prev) and index 2 (next) so just_audio_background always reports
+  // hasNext/hasPrevious = true, showing prev/play/next in the notification.
+  // Ceiling: 3 silent sources always allocated; upgrade path = real queue mode.
+  late final ConcatenatingAudioSource _playlist;
+  bool _handlingNotificationSkip = false;
+
   PlayerNotifier() : super(const PlayerState()) {
+    _playlist = ConcatenatingAudioSource(children: [
+      _silentSource(),
+      _silentSource(),
+      _silentSource(),
+    ]);
+
     _player.playingStream.listen((playing) {
       if (mounted) state = state.copyWith(isPlaying: playing);
     });
@@ -104,11 +126,35 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     });
     _player.playerStateStream.listen((ps) {
       if (!mounted) return;
-      if (ps.processingState == ProcessingState.completed) {
+      // Only fire completed for the real track (slot 1), not dummy slots.
+      if (ps.processingState == ProcessingState.completed &&
+          _player.currentIndex == 1) {
         _onTrackCompleted();
       }
     });
+    // Intercept OS notification prev/next button presses.
+    _player.currentIndexStream.listen((index) {
+      if (!mounted || index == null || index == 1) return;
+      if (_handlingNotificationSkip) return;
+      _handlingNotificationSkip = true;
+      if (index == 0) {
+        previous().whenComplete(() => _handlingNotificationSkip = false);
+      } else if (index == 2) {
+        next().whenComplete(() => _handlingNotificationSkip = false);
+      } else {
+        _handlingNotificationSkip = false;
+      }
+    });
   }
+
+  /// A minimal silent audio source used as a dummy prev/next slot.
+  /// ponytail: uses 1-second silence so OS notification shows prev/play/next.
+  /// Won't play audibly; _loadAndPlay stops it immediately on index change.
+  AudioSource _silentSource() => AudioSource.uri(
+        Uri.parse(
+            'https://upload.wikimedia.org/wikipedia/commons/6/6e/Silence.mp3'),
+        tag: const MediaItem(id: '__dummy__', title: ''),
+      );
 
   // -- Public API --------------------------------------------------------------
 
@@ -139,6 +185,21 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
   Future<void> seekTo(Duration pos) => _player.seek(pos);
+
+  Future<void> seekForward(Duration duration) async {
+    final newPos = state.position + duration;
+    if (newPos < state.duration) {
+      await _player.seek(newPos);
+    } else {
+      await _player.seek(state.duration);
+    }
+  }
+
+  Future<void> seekBackward(Duration duration) async {
+    final newPos = state.position - duration;
+    final clamped = newPos < Duration.zero ? Duration.zero : newPos;
+    await _player.seek(clamped);
+  }
 
   Future<void> next() async {
     if (state.queue.isEmpty) return;
@@ -294,32 +355,55 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     if (item == null) return false;
     try {
       if (await OfflineCacheService.instance.isCached(item.id)) {
-        state = state.copyWith(isCached: true);
+        state = state.copyWith(isCached: true, isDownloading: false);
         return true;
       }
+      state = state.copyWith(isDownloading: true, downloadingProgress: 0.0);
       final url = await _yt.resolveStreamUrl(item);
-      if (url == null) return false;
+      if (url == null) {
+        state = state.copyWith(isDownloading: false, downloadingProgress: null);
+        return false;
+      }
+      OfflineCacheService.instance.downloadProgress.addListener(_onDownloadProgress);
       await OfflineCacheService.instance.download(item, url);
-      if (mounted) state = state.copyWith(isCached: true);
+      OfflineCacheService.instance.downloadProgress.removeListener(_onDownloadProgress);
+      if (mounted) {
+        state = state.copyWith(isCached: true, isDownloading: false, downloadingProgress: null);
+      }
       return true;
     } catch (e) {
       debugPrint('[Player] download error: $e');
+      state = state.copyWith(isDownloading: false, downloadingProgress: null);
       return false;
+    }
+  }
+
+  void _onDownloadProgress() {
+    final progress = OfflineCacheService.instance.getProgress(state.current?.id ?? '');
+    if (mounted && progress != null) {
+      state = state.copyWith(isDownloading: true, downloadingProgress: progress);
     }
   }
 
   Future<bool> downloadTrack(MusicItem item) async {
     try {
       if (await OfflineCacheService.instance.isCached(item.id)) return true;
+      state = state.copyWith(isDownloading: true, downloadingProgress: 0.0);
       final url = await _yt.resolveStreamUrl(item);
-      if (url == null) return false;
+      if (url == null) {
+        state = state.copyWith(isDownloading: false, downloadingProgress: null);
+        return false;
+      }
+      OfflineCacheService.instance.downloadProgress.addListener(_onDownloadProgress);
       await OfflineCacheService.instance.download(item, url);
+      OfflineCacheService.instance.downloadProgress.removeListener(_onDownloadProgress);
       if (mounted && state.current?.id == item.id) {
-        state = state.copyWith(isCached: true);
+        state = state.copyWith(isCached: true, isDownloading: false, downloadingProgress: null);
       }
       return true;
     } catch (e) {
       debugPrint('[Player] downloadTrack error: $e');
+      state = state.copyWith(isDownloading: false, downloadingProgress: null);
       return false;
     }
   }
@@ -359,13 +443,21 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         state = state.copyWith(loadingStatus: 'Menyiapkan pemutar…');
       }
 
-      final source = await _yt.getAudioSource(item);
+      final realSource = await _yt.getAudioSource(item);
 
       if (!mounted || myId != _loadId) return;
 
-      if (source == null) throw Exception('Tidak dapat memuat audio');
+      if (realSource == null) throw Exception('Tidak dapat memuat audio');
 
-      await _player.setAudioSource(source);
+      // Replace slot 1 (middle) with the real source; keep dummy slots at 0 & 2
+      // so just_audio_background sees hasNext/hasPrevious = true → shows
+      // prev/play/next in the notification instead of stop/pause.
+      await _playlist.removeAt(1);
+      await _playlist.insert(1, realSource);
+
+      if (!mounted || myId != _loadId) return;
+
+      await _player.setAudioSource(_playlist, initialIndex: 1);
 
       if (!mounted || myId != _loadId) return;
 
@@ -375,34 +467,33 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         state = state.copyWith(
           isLoading: false,
           isCached: cached,
+          isDownloading: false,
+          downloadingProgress: null,
           clearError: true,
           clearLoadingStatus: true,
         );
       }
     } catch (e) {
-      // "Loading interrupted" is the just_audio message when a newer load
-      // preempts this one; it's expected & safe to ignore.
       final isInterrupt = e.toString().contains('Loading interrupted') ||
           e.toString().contains('interrupted');
 
       if (!mounted) return;
-      if (myId != _loadId) return; // stale load, ignore
+      if (myId != _loadId) return;
 
       if (isInterrupt) {
-        // The player was taken over by a newer request — nothing to do.
         return;
       }
 
       debugPrint('[Player] _loadAndPlay error: $e');
       state = state.copyWith(
         isLoading: false,
-        error: 'Gagal memutar lagu.',
+        isDownloading: false,
+        downloadingProgress: null,
         clearLoadingStatus: true,
       );
 
-      // Auto-skip to next on playback failure (error prevention heuristic).
       await Future.delayed(const Duration(milliseconds: 800));
-      if (mounted && state.error != null) {
+      if (mounted && !state.isPlaying) {
         _tryAutoSkipOnError();
       }
     }
