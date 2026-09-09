@@ -42,6 +42,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _forgotPassword() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) {
+      setState(() => _error = 'Masukkan email dulu untuk reset password.');
+      return;
+    }
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Link reset password telah dikirim ke email kamu.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Gagal mengirim email reset.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,7 +165,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 8),
+
+              // Forgot password
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: _forgotPassword,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                    child: Text('Lupa password?', style: TextStyle(
+                      color: LumaColors.accent, fontSize: 13, fontWeight: FontWeight.w500,
+                    )),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // CTA — accent used only here as the primary action
               SizedBox(
