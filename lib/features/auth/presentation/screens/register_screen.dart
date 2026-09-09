@@ -202,6 +202,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : const Text('Buat Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
                 ),
               ),
+              const SizedBox(height: 28),
+
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Text('Sudah punya akun?', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14)),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Text('Masuk', style: TextStyle(
+                    color: LumaColors.accent, fontSize: 14, fontWeight: FontWeight.w600,
+                  )),
+                ),
+              ]),
               const SizedBox(height: 32),
             ],
           ),
