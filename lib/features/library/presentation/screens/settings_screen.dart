@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../profile/presentation/screens/profile_screen.dart';
 import 'downloads_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -78,7 +79,10 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.person_outline_rounded,
             label: 'Informasi Profil',
             subtitle: email,
-            onTap: () {},
+            onTap: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()));
+            },
           ),
 
           const SizedBox(height: 8),

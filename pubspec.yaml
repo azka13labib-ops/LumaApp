@@ -42,6 +42,7 @@ dependencies:
   flutter_dotenv: any
   just_audio_background: ^0.0.1-beta.17
   palette_generator: ^0.3.3
+  connectivity_plus: ^5.0.0
 
 dev_dependencies:
   flutter_test:

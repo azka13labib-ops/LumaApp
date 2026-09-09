@@ -7,6 +7,8 @@ import '../../../playlist/presentation/screens/create_playlist_screen.dart';
 import 'liked_songs_screen.dart';
 import 'playlist_detail_screen.dart';
 import 'settings_screen.dart';
+import 'downloads_screen.dart';
+import '../../../../core/services/offline_cache_service.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -20,8 +22,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   List<MusicItem> _likedSongs = [];
   List<Map<String, dynamic>> _playlists = [];
+  List<MusicItem> _downloads = [];
   bool _loading = true;
-  String _filter = 'Semua'; // Semua / Playlist / Lagu Disukai
+  String _filter = 'Semua'; // Semua / Playlist / Lagu Disukai / Unduhan
   final _searchController = TextEditingController();
   bool _searchActive = false;
 
@@ -39,8 +42,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   Future<void> _fetchAll() async {
     setState(() => _loading = true);
-    await Future.wait([_fetchLikedSongs(), _fetchPlaylists()]);
+    await Future.wait([_fetchLikedSongs(), _fetchPlaylists(), _fetchDownloads()]);
     if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _fetchDownloads() async {
+    try {
+      _downloads = await OfflineCacheService.instance.listCached();
+    } catch (e) {
+      debugPrint('Downloads error: $e');
+    }
   }
 
   Future<void> _fetchLikedSongs() async {
@@ -182,7 +193,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: ['Semua', 'Playlist', 'Lagu Disukai'].map((f) {
+                  children: ['Semua', 'Playlist', 'Lagu Disukai', 'Unduhan'].map((f) {
                     final selected = _filter == f;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -233,12 +244,27 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
     final showLiked = (_filter == 'Semua' || _filter == 'Lagu Disukai');
     final showPlaylists = (_filter == 'Semua' || _filter == 'Playlist');
+    final showDownloads = (_filter == 'Semua' || _filter == 'Unduhan');
 
     final filteredPlaylists = _playlists
         .where((p) => q.isEmpty || (p['name'] ?? '').toLowerCase().contains(q))
         .toList();
 
     final items = <Widget>[];
+
+    // Pinned: Unduhan (offline)
+    if (showDownloads &&
+        (q.isEmpty || 'unduhan'.contains(q) || 'download'.contains(q) || 'offline'.contains(q))) {
+      items.add(_DownloadsRow(
+        count: _downloads.length,
+        onTap: () async {
+          await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DownloadsScreen()));
+          _fetchAll(); // refresh count after delete
+        },
+      ));
+    }
 
     // Pinned: Lagu Disukai
     if (showLiked &&
@@ -294,6 +320,38 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       padding: const EdgeInsets.only(bottom: 160),
       itemCount: items.length,
       itemBuilder: (_, i) => items[i],
+    );
+  }
+}
+
+// ── Downloads Row ─────────────────────────────────────────────────────────────
+
+class _DownloadsRow extends StatelessWidget {
+  const _DownloadsRow({required this.count, required this.onTap});
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      leading: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Icon(Icons.download_done_rounded, color: Colors.white70, size: 28),
+      ),
+      title: const Text('Unduhan',
+          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+      subtitle: Text(
+        count == 0 ? 'Belum ada lagu tersimpan' : '$count lagu · tersimpan offline',
+        style: const TextStyle(color: Colors.white54, fontSize: 12),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white30),
+      onTap: onTap,
     );
   }
 }

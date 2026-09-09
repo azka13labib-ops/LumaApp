@@ -68,15 +68,24 @@ class MiniPlayer extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              item.title,
-                              style: const TextStyle(
-                                color: LumaColors.darkTextPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item.title,
+                                    style: const TextStyle(
+                                      color: LumaColors.darkTextPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (ps.isCached)
+                                  const Icon(Icons.download_done_rounded,
+                                      color: LumaColors.accent, size: 14),
+                              ],
                             ),
                             Text(
                               item.author,

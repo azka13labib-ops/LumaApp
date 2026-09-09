@@ -4,6 +4,7 @@ import 'package:palette_generator/palette_generator.dart';
 
 import '../../../../core/providers/player_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/offline_cache_service.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
 import '../widgets/lyrics_sheet.dart';
 import '../widgets/queue_sheet.dart';
@@ -22,13 +23,68 @@ final _paletteProvider =
         pg.darkVibrantColor?.color ??
         pg.dominantColor?.color;
     if (picked == null) return const Color(0xFF1A1A1A);
-    // Clamp lightness so bg stays dark
     final hsl = HSLColor.fromColor(picked);
     return hsl.withLightness(hsl.lightness.clamp(0.08, 0.28)).toColor();
   } catch (_) {
     return const Color(0xFF1A1A1A);
   }
 });
+
+class _DownloadBtn extends ConsumerWidget {
+  const _DownloadBtn();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(playerProvider);
+    if (state.current == null) return const SizedBox.shrink();
+
+    final item = state.current!;
+    final isCached = state.isCached;
+    final isDownloading = state.isDownloading;
+    final progress = state.downloadingProgress;
+
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: isDownloading
+            ? CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: LumaColors.accent,
+                value: progress != null ? progress.clamp(0.0, 1.0) : null,
+              )
+            : Icon(
+                isCached ? Icons.download_done_rounded : Icons.download_rounded,
+                color: isCached ? LumaColors.accent : Colors.white,
+                size: 26,
+              ),
+        onPressed: () async {
+          if (isCached) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              _modernSnack('Lagu sudah tersimpan offline', isError: false),
+            );
+            return;
+          }
+          if (isDownloading) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            _modernSnack('Mengunduh…', isError: false, duration: const Duration(seconds: 2)),
+          );
+          await ref.read(playerProvider.notifier).downloadCurrent();
+          if (!context.mounted) return;
+          final nowCached = await OfflineCacheService.instance.isCached(item.id);
+          ScaffoldMessenger.of(context).showSnackBar(
+            _modernSnack(
+              nowCached ? 'Berhasil diunduh 🎵' : 'Gagal mengunduh',
+              isError: !nowCached,
+            ),
+          );
+        },
+        tooltip: isCached ? 'Hapus unduhan' : 'Unduh untuk offline',
+      ),
+    );
+  }
+}
 
 class PlayerScreen extends ConsumerWidget {
   const PlayerScreen({super.key});
@@ -101,19 +157,25 @@ class PlayerScreen extends ConsumerWidget {
                 Navigator.pop(ctx);
                 if (state.isCached) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(_snack('Lagu sudah ada di unduhan'));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      _modernSnack('Lagu sudah ada di unduhan', isError: false),
+                    );
                   }
                   return;
                 }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                      _snack('Mengunduh…', duration: const Duration(seconds: 2)));
+                    _modernSnack('Mengunduh…', isError: false, duration: const Duration(seconds: 2)),
+                  );
                 }
                 final ok = await ref.read(playerProvider.notifier).downloadCurrent();
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                    _snack(ok ? 'Berhasil diunduh' : 'Gagal mengunduh lagu',
-                        isError: !ok));
+                  _modernSnack(
+                    ok ? 'Berhasil diunduh' : 'Gagal mengunduh lagu',
+                    isError: !ok,
+                  ),
+                );
               },
             ),
             ListTile(
@@ -141,15 +203,6 @@ class PlayerScreen extends ConsumerWidget {
     );
   }
 
-  SnackBar _snack(String msg, {Duration? duration, bool isError = false}) =>
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? const Color(0xFF8B1A1A) : const Color(0xFF1A1A1A),
-        behavior: SnackBarBehavior.floating,
-        duration: duration ?? const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(playerProvider);
@@ -161,7 +214,6 @@ class PlayerScreen extends ConsumerWidget {
     final shuffleActive = state.isShuffled;
     final repeatActive = state.repeatMode != RepeatMode.off;
 
-    // Palette-driven background
     final paletteAsync = ref.watch(_paletteProvider(item.thumbnailUrl));
     final bgColor = paletteAsync.maybeWhen(
       data: (c) => c,
@@ -184,7 +236,7 @@ class PlayerScreen extends ConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // ── AppBar ──────────────────────────────────────────────────────
+              // ── AppBar ──────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
                 child: Row(
@@ -219,7 +271,7 @@ class PlayerScreen extends ConsumerWidget {
 
               const Spacer(),
 
-              // ── Artwork — large, centered, with elevation shadow ──────────
+              // ── Artwork ────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: AnimatedScale(
@@ -258,7 +310,7 @@ class PlayerScreen extends ConsumerWidget {
 
               const Spacer(),
 
-              // ── Track info + Like ─────────────────────────────────────────
+              // ── Track info + Download + Like ──────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
                 child: Row(
@@ -301,8 +353,10 @@ class PlayerScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    // 48×48 touch target for Like
+                    const SizedBox(width: 8),
+                    const _DownloadBtn(),
+                    const SizedBox(width: 4),
+                    // 48×48 Like
                     SizedBox(
                       width: 48,
                       height: 48,
@@ -336,7 +390,7 @@ class PlayerScreen extends ConsumerWidget {
 
               const SizedBox(height: 20),
 
-              // ── Progress slider ─────────────────────────────────────────
+              // ── Progress slider ────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
@@ -381,7 +435,6 @@ class PlayerScreen extends ConsumerWidget {
                                   color: LumaColors.darkTextSecondary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500)),
-                          // Loading status microcopy
                           if (state.isLoading && state.loadingStatus != null)
                             Text(
                               state.loadingStatus!,
@@ -404,13 +457,13 @@ class PlayerScreen extends ConsumerWidget {
 
               const SizedBox(height: 8),
 
-              // ── Playback controls ───────────────────────────────────────
+              // ── Playback controls ──────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Shuffle — 48×48 touch target
+                    // Shuffle
                     _ControlBtn(
                       icon: Icons.shuffle_rounded,
                       size: 22,
@@ -419,6 +472,7 @@ class PlayerScreen extends ConsumerWidget {
                           ref.read(playerProvider.notifier).toggleShuffle(),
                       badge: shuffleActive,
                     ),
+                    // Skip Previous
                     _ControlBtn(
                       icon: Icons.skip_previous_rounded,
                       size: 36,
@@ -426,7 +480,15 @@ class PlayerScreen extends ConsumerWidget {
                       onTap: () =>
                           ref.read(playerProvider.notifier).previous(),
                     ),
-                    // Play/Pause — main CTA
+                    // Skip Backward 10s
+                    _ControlBtn(
+                      icon: Icons.replay_10_rounded,
+                      size: 24,
+                      color: Colors.white54,
+                      onTap: () =>
+                          ref.read(playerProvider.notifier).seekBackward(const Duration(seconds: 10)),
+                    ),
+                    // Play/Pause
                     GestureDetector(
                       onTap: () =>
                           ref.read(playerProvider.notifier).togglePlayPause(),
@@ -457,6 +519,15 @@ class PlayerScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    // Skip Forward 10s
+                    _ControlBtn(
+                      icon: Icons.forward_10_rounded,
+                      size: 24,
+                      color: Colors.white54,
+                      onTap: () =>
+                          ref.read(playerProvider.notifier).seekForward(const Duration(seconds: 10)),
+                    ),
+                    // Skip Next
                     _ControlBtn(
                       icon: Icons.skip_next_rounded,
                       size: 36,
@@ -478,7 +549,7 @@ class PlayerScreen extends ConsumerWidget {
 
               const SizedBox(height: 24),
 
-              // ── Secondary actions ─────────────────────────────────────────
+              // ── Secondary actions ──────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -490,13 +561,6 @@ class PlayerScreen extends ConsumerWidget {
                       onTap: () =>
                           _showLyrics(context, item.title, item.author),
                     ),
-                    if (state.error != null)
-                      Text(
-                        'Gagal memutar. Melompat ke lagu berikutnya…',
-                        style: TextStyle(
-                            color: Colors.red.shade300, fontSize: 11),
-                        textAlign: TextAlign.center,
-                      ),
                     _SecondaryBtn(
                       icon: Icons.queue_music_rounded,
                       label: 'Antrian (${state.queue.length})',
@@ -513,6 +577,32 @@ class PlayerScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+SnackBar _modernSnack(String msg, {Duration? duration, bool isError = false}) {
+  return SnackBar(
+    content: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          isError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
+          color: isError ? Colors.red.shade300 : LumaColors.accent,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            msg,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+          ),
+        ),
+      ],
+    ),
+    backgroundColor: LumaColors.darkSurface,
+    behavior: SnackBarBehavior.floating,
+    duration: duration ?? const Duration(seconds: 3),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  );
 }
 
 /// Compact icon button with guaranteed 48×48 touch target.

@@ -20,6 +20,15 @@ class OfflineCacheService {
 
   Directory? _dir;
 
+  /// Reactive download progress notifier: trackId -> double (0.0 to 1.0)
+  final ValueNotifier<Map<String, double>> downloadProgress =
+      ValueNotifier<Map<String, double>>({});
+
+  bool isDownloading(String youtubeId) =>
+      downloadProgress.value.containsKey(youtubeId);
+
+  double? getProgress(String youtubeId) => downloadProgress.value[youtubeId];
+
   Future<Directory> _cacheDir() async {
     if (_dir != null) return _dir!;
     final docs = await getApplicationDocumentsDirectory();
@@ -32,6 +41,11 @@ class OfflineCacheService {
   Future<File> _audioFile(String youtubeId) async {
     final dir = await _cacheDir();
     return File('${dir.path}/$youtubeId.mp3');
+  }
+
+  Future<File> _thumbFile(String youtubeId) async {
+    final dir = await _cacheDir();
+    return File('${dir.path}/$youtubeId.jpg');
   }
 
   Future<File> _metaFile(String youtubeId) async {
@@ -53,25 +67,134 @@ class OfflineCacheService {
     return null;
   }
 
-  Future<void> download(MusicItem item, String streamUrl) async {
+  Future<String?> localThumbnailPath(String youtubeId) async {
+    final file = await _thumbFile(youtubeId);
+    if (await file.exists()) return file.path;
+    return null;
+  }
+
+  Future<void> download(
+    MusicItem item,
+    String streamUrl, {
+    void Function(double progress)? onProgress,
+  }) async {
     final file = await _audioFile(item.id);
+    final thumb = await _thumbFile(item.id);
     final meta = await _metaFile(item.id);
-    debugPrint('[Offline] Downloading ${item.title} → ${file.path}');
-    await _dio.download(streamUrl, file.path);
-    await meta.writeAsString(jsonEncode({
-      'id': item.id,
-      'title': item.title,
-      'author': item.author,
-      'thumbnailUrl': item.thumbnailUrl,
-      'savedAt': DateTime.now().toIso8601String(),
-    }));
+
+    // Register active download
+    final newMap = Map<String, double>.from(downloadProgress.value);
+    newMap[item.id] = 0.05;
+    downloadProgress.value = newMap;
+    onProgress?.call(0.05);
+
+    try {
+      debugPrint('[Offline] Downloading ${item.title} → ${file.path}');
+      await _dio.download(
+        streamUrl,
+        file.path,
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            final p = (received / total).clamp(0.0, 0.95);
+            final updated = Map<String, double>.from(downloadProgress.value);
+            updated[item.id] = p;
+            downloadProgress.value = updated;
+            onProgress?.call(p);
+          }
+        },
+      );
+
+      // Download cover art image if available
+      String? savedThumbPath;
+      if (item.thumbnailUrl.isNotEmpty) {
+        try {
+          await _dio.download(item.thumbnailUrl, thumb.path);
+          if (await thumb.exists()) {
+            savedThumbPath = thumb.path;
+          }
+        } catch (e) {
+          debugPrint('[Offline] Thumbnail download skipped/failed: $e');
+        }
+      }
+
+      final audioSize = await file.length();
+      final thumbSize = (savedThumbPath != null && await thumb.exists())
+          ? await thumb.length()
+          : 0;
+      final totalSize = audioSize + thumbSize;
+
+      await meta.writeAsString(jsonEncode({
+        'id': item.id,
+        'title': item.title,
+        'author': item.author,
+        'thumbnailUrl': item.thumbnailUrl,
+        'localThumbnailPath': savedThumbPath,
+        'fileSizeBytes': totalSize,
+        'savedAt': DateTime.now().toIso8601String(),
+      }));
+
+      onProgress?.call(1.0);
+    } finally {
+      // Remove from active download map
+      final doneMap = Map<String, double>.from(downloadProgress.value);
+      doneMap.remove(item.id);
+      downloadProgress.value = doneMap;
+    }
   }
 
   Future<void> remove(String youtubeId) async {
     final audio = await _audioFile(youtubeId);
+    final thumb = await _thumbFile(youtubeId);
     final meta = await _metaFile(youtubeId);
     if (await audio.exists()) await audio.delete();
+    if (await thumb.exists()) await thumb.delete();
     if (await meta.exists()) await meta.delete();
+  }
+
+  Future<void> clearAll() async {
+    final dir = await _cacheDir();
+    if (await dir.exists()) {
+      await for (final entity in dir.list()) {
+        try {
+          await entity.delete(recursive: true);
+        } catch (e) {
+          debugPrint('[Offline] clear entity error: $e');
+        }
+      }
+    }
+  }
+
+  Future<int> getTrackSizeBytes(String youtubeId) async {
+    var total = 0;
+    final audio = await _audioFile(youtubeId);
+    if (await audio.exists()) total += await audio.length();
+    final thumb = await _thumbFile(youtubeId);
+    if (await thumb.exists()) total += await thumb.length();
+    return total;
+  }
+
+  Future<int> getTotalSizeBytes() async {
+    final dir = await _cacheDir();
+    var total = 0;
+    try {
+      await for (final entity in dir.list()) {
+        if (entity is File) {
+          total += await entity.length();
+        }
+      }
+    } catch (_) {}
+    return total;
+  }
+
+  static String formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    if (bytes < 1024) return '$bytes B';
+    final kb = bytes / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(1)} KB';
+    final mb = kb / 1024;
+    if (mb < 1024) return '${mb.toStringAsFixed(1)} MB';
+    final gb = mb / 1024;
+    return '${gb.toStringAsFixed(2)} GB';
   }
 
   Future<List<MusicItem>> listCached() async {
@@ -80,15 +203,25 @@ class OfflineCacheService {
     await for (final entity in dir.list()) {
       if (entity is! File || !entity.path.endsWith('.json')) continue;
       try {
-        final map = jsonDecode(await entity.readAsString()) as Map<String, dynamic>;
+        final map =
+            jsonDecode(await entity.readAsString()) as Map<String, dynamic>;
         final id = map['id'] as String? ?? '';
         if (id.isEmpty) continue;
         if (!await isCached(id)) continue;
+
+        final thumb = await _thumbFile(id);
+        final hasThumb = await thumb.exists();
+
+        final audio = await _audioFile(id);
+        final size = (await audio.length()) + (hasThumb ? await thumb.length() : 0);
+
         items.add(MusicItem(
           id: id,
           title: map['title'] as String? ?? 'Tanpa judul',
           author: map['author'] as String? ?? 'Tidak diketahui',
           thumbnailUrl: map['thumbnailUrl'] as String? ?? '',
+          localThumbnailPath: hasThumb ? thumb.path : (map['localThumbnailPath'] as String?),
+          fileSizeBytes: size,
         ));
       } catch (e) {
         debugPrint('[Offline] meta read error: $e');

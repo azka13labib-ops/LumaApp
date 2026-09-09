@@ -14,13 +14,35 @@ class MusicItem {
   final String title;
   final String author;
   final String thumbnailUrl;
+  final String? localThumbnailPath;
+  final int? fileSizeBytes;
 
   MusicItem({
     required this.id,
     required this.title,
     required this.author,
     required this.thumbnailUrl,
+    this.localThumbnailPath,
+    this.fileSizeBytes,
   });
+
+  MusicItem copyWith({
+    String? id,
+    String? title,
+    String? author,
+    String? thumbnailUrl,
+    String? localThumbnailPath,
+    int? fileSizeBytes,
+  }) {
+    return MusicItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      author: author ?? this.author,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      localThumbnailPath: localThumbnailPath ?? this.localThumbnailPath,
+      fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+    );
+  }
 
   factory MusicItem.fromMap(
     Map<String, dynamic> row, {
@@ -28,10 +50,12 @@ class MusicItem {
     String missingArtist = '',
   }) {
     return MusicItem(
-      id: row['youtube_id'] ?? '',
+      id: row['youtube_id'] ?? row['id'] ?? '',
       title: row['title'] ?? missingTitle,
       author: row['artist'] ?? row['author'] ?? missingArtist,
       thumbnailUrl: row['cover_url'] ?? row['thumbnail'] ?? '',
+      localThumbnailPath: row['local_thumbnail_path'],
+      fileSizeBytes: row['file_size_bytes'],
     );
   }
 
