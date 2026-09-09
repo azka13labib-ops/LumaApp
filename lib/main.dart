@@ -116,37 +116,40 @@ class _MainShellState extends State<MainShell> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Mini player sits on top of the bottom nav — never clips list items
-          const MiniPlayer(),
-          BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              if (index == 4) {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const CreatePlaylistScreen()));
-                return;
-              }
-              setState(() => _currentIndex = index);
-            },
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: LumaColors.darkBg,
-            selectedItemColor: Colors.white,
-            unselectedItemColor: Colors.white38,
-            selectedFontSize: 10,
-            unselectedFontSize: 10,
-            elevation: 0,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Cari'),
-              BottomNavigationBarItem(icon: Icon(Icons.library_music_rounded), label: 'Koleksi'),
-              BottomNavigationBarItem(icon: Icon(Icons.workspace_premium_rounded), label: 'Premium'),
-              BottomNavigationBarItem(icon: Icon(Icons.add_box_outlined), label: 'Buat'),
-            ],
-          ),
-        ],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Mini player sits on top of the bottom nav — never clips list items
+            const MiniPlayer(),
+            BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                if (index == 4) {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const CreatePlaylistScreen()));
+                  return;
+                }
+                setState(() => _currentIndex = index);
+              },
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: LumaColors.darkBg,
+              selectedItemColor: Colors.white,
+              unselectedItemColor: Colors.white38,
+              selectedFontSize: 10,
+              unselectedFontSize: 10,
+              elevation: 0,
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+                BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Cari'),
+                BottomNavigationBarItem(icon: Icon(Icons.library_music_rounded), label: 'Koleksi'),
+                BottomNavigationBarItem(icon: Icon(Icons.workspace_premium_rounded), label: 'Premium'),
+                BottomNavigationBarItem(icon: Icon(Icons.add_box_outlined), label: 'Buat'),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
