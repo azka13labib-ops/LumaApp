@@ -132,6 +132,14 @@ class AppTheme {
       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 7),
       overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
     ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: LumaColors.darkSurface,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      showCloseIcon: true,
+      closeIconColor: Colors.white54,
+      contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+    ),
   );
 
   static ThemeData get dark => ThemeData(
@@ -211,6 +219,10 @@ class AppTheme {
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,
       ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: LumaColors.accent, width: 1.5),
+      ),
       hintStyle: const TextStyle(
         color: LumaColors.darkTextSecondary,
         fontSize: 15,
@@ -230,6 +242,14 @@ class AppTheme {
       trackHeight: 3,
       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 7),
       overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: LumaColors.darkSurface,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      showCloseIcon: true,
+      closeIconColor: Colors.white54,
+      contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
     ),
   );
 }
