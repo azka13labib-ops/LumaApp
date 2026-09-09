@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/youtube_service.dart';
@@ -16,6 +18,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final YouTubeService _ytService = YouTubeService();
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  Timer? _debounce;
   List<MusicItem> _results = [];
   bool _loading = false;
   String? _error;
@@ -23,6 +26,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     _focusNode.dispose();
     _ytService.dispose();
@@ -64,7 +68,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     style: const TextStyle(color: Colors.white, fontSize: 15),
                     textInputAction: TextInputAction.search,
                     onSubmitted: _search,
-                    onChanged: (_) => setState(() {}),
+                    onChanged: (v) {
+                      setState(() {});
+                      _debounce?.cancel();
+                      if (v.trim().length >= 2) {
+                        _debounce = Timer(const Duration(milliseconds: 500), () => _search(v));
+                      }
+                    },
                     decoration: InputDecoration(
                       hintText: 'Lagu, artis, atau album',
                       hintStyle: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 15),
