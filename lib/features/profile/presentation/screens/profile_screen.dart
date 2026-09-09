@@ -1,49 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../library/presentation/screens/settings_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:luma_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:luma_app/features/home/presentation/screens/home_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  /// Extract a display name from email: "user@gmail.com" → "user"
+  String _displayName(String? email) {
+    if (email == null || email.isEmpty) return 'Pengguna';
+    return email.split('@').first;
+  }
+
+  /// Format createdAt timestamp into a human-readable Indonesian string.
+  String _memberSince(String? createdAt) {
+    if (createdAt == null) return '';
+    try {
+      final dt = DateTime.parse(createdAt).toLocal();
+      const months = [
+        '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      ];
+      return 'Bergabung ${months[dt.month]} ${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
+    final displayName = _displayName(user?.email);
+    final memberSince = _memberSince(user?.createdAt);
 
     return Scaffold(
       backgroundColor: LumaColors.darkBg,
       appBar: AppBar(
-        title: const Text('Profil'),
+        title: const Text('Profil', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             CircleAvatar(
               radius: 50,
-              backgroundColor: LumaColors.accent,
+              backgroundColor: LumaColors.accent.withValues(alpha: 0.2),
               child: Text(initial, style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 16),
             Text(
-              user?.email ?? 'Unknown User',
-              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              displayName,
+              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4),
             ),
+            const SizedBox(height: 4),
+            Text(
+              user?.email ?? '',
+              style: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
+            ),
+            if (memberSince.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: LumaColors.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  memberSince,
+                  style: const TextStyle(color: LumaColors.accent, fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
-            ListTile(
-              leading: const Icon(Icons.history, color: Colors.white),
-              title: const Text('Riwayat didengar', style: TextStyle(color: Colors.white)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-              onTap: () {},
+            _tile(
+              context,
+              icon: Icons.history_rounded,
+              label: 'Riwayat didengar',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeScreen())),
             ),
-            ListTile(
-              leading: const Icon(Icons.settings, color: Colors.white),
-              title: const Text('Pengaturan', style: TextStyle(color: Colors.white)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-              onTap: () {},
+            _tile(
+              context,
+              icon: Icons.settings_rounded,
+              label: 'Pengaturan',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -51,8 +101,9 @@ class ProfileScreen extends StatelessWidget {
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white54),
+                  side: const BorderSide(color: Colors.white24),
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () async {
                   await Supabase.instance.client.auth.signOut();
@@ -70,6 +121,25 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _tile(BuildContext context,
+      {required IconData icon, required String label, required VoidCallback onTap}) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: LumaColors.darkSurface,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: Colors.white70, size: 20),
+      ),
+      title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 15)),
+      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white24),
+      onTap: onTap,
     );
   }
 }
