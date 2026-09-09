@@ -65,6 +65,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   TextField(
                     controller: _controller,
                     focusNode: _focusNode,
+                    autofocus: true,
                     style: const TextStyle(color: Colors.white, fontSize: 15),
                     textInputAction: TextInputAction.search,
                     onSubmitted: _search,
