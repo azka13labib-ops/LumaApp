@@ -1,17 +1,26 @@
-# luma_app
+# LumaApp 🎵
 
-A new Flutter project.
+LumaApp is a premium, minimalist music streaming application designed for seamless background listening without interruptions. Built with Flutter and Supabase.
 
-## Getting Started
+## Features ✨
 
-This project is a starting point for a Flutter application.
+* **Ad-Free Experience**: Continuous background playback without any intrusive ads.
+* **Smart Search**: Direct YouTube integration for accurate and comprehensive music search with live debounce.
+* **Offline Mode**: Download your favorite tracks and listen without an internet connection.
+* **Background Playback**: Full OS integration with lock screen controls and proper next/previous handling.
+* **Modern UI**: A sleek, dark-themed UI following "anti-slop" design principles for a premium feel.
 
-A few resources to get you started if this is your first Flutter project:
+## Tech Stack 🛠️
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+* **Framework**: Flutter
+* **Backend**: Supabase (Auth, Database for liked songs & history)
+* **Audio**: `just_audio` & `just_audio_background`
+* **Media Provider**: `youtube_explode_dart`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Getting Started 🚀
+
+1. Ensure you have Flutter installed.
+2. Clone the repository.
+3. Run `flutter pub get`.
+4. Configure your Supabase keys in the `.env` file (if applicable).
+5. Run the app: `flutter run`.
