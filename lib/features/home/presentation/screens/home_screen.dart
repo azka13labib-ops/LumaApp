@@ -7,6 +7,7 @@ import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
+import '../../../../features/player/presentation/widgets/track_row.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -208,46 +209,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cached tracks indicator when offline
-            if (_isOffline && _cachedTracks.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: Text('Tersimpan Offline',
-                  style: TextStyle(color: LumaColors.accent, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
-              ),
-              SizedBox(
-                height: 140,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _cachedTracks.length,
-                  itemBuilder: (context, i) => _CachedCard(_cachedTracks[i], onTap: () {
-                    ref.read(playerProvider.notifier).play(_cachedTracks, i);
-                  }),
+            // If offline, display the cached tracks as a vertical list (primary content)
+            if (_isOffline) ...[
+              if (_cachedTracks.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Text('Tersimpan Offline',
+                    style: TextStyle(color: LumaColors.accent, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _cachedTracks.length,
+                  itemBuilder: (context, i) => TrackRow(
+                    item: _cachedTracks[i],
+                    onTap: () => ref.read(playerProvider.notifier).play(_cachedTracks, i),
+                  ),
+                ),
+              ] else
+                const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.wifi_off_rounded, color: Colors.white12, size: 64),
+                        SizedBox(height: 16),
+                        Text('Kamu sedang offline dan belum ada lagu yang diunduh.',
+                          style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 15), textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
+                ),
+            ] else ...[
+              // ONLINE MODE
+              if (_recentlyPlayed.isEmpty && _likedSongs.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 48, 16, 16),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.headphones_rounded, color: Colors.white12, size: 64),
+                    SizedBox(height: 16),
+                    Text('Mulai cari lagu dan putar musik\nuntuk mengisi beranda kamu.',
+                      style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 15), textAlign: TextAlign.center),
+                  ]),
+                ),
 
-            if (_recentlyPlayed.isEmpty && _likedSongs.isEmpty && !(_isOffline && _cachedTracks.isNotEmpty))
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 48, 16, 16),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.headphones_rounded, color: Colors.white12, size: 64),
-                  SizedBox(height: 16),
-                  Text('Mulai cari lagu dan putar musik\nuntuk mengisi beranda kamu.',
-                    style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 15), textAlign: TextAlign.center),
-                ]),
-              ),
-
-            if (_recentlyPlayed.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Baru saja didengar',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
+              if (_recentlyPlayed.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('Baru saja didengar',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
                 height: 168,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -336,6 +350,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                 ),
               ),
+              ],
             ],
           ],
         ),
@@ -344,52 +359,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _CachedCard extends StatelessWidget {
-  const _CachedCard(this.item, {required this.onTap});
-  final MusicItem item;
-  final VoidCallback onTap;
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 100,
-        margin: const EdgeInsets.only(right: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: Image.network(
-                item.thumbnailUrl,
-                width: 100, height: 100, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 100, height: 100, color: LumaColors.darkSurface,
-                  child: const Icon(Icons.music_note, color: Colors.white24, size: 32),
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(item.title,
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A3A1A),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text('Offline',
-                style: TextStyle(color: Color(0xFF88FF88), fontSize: 9, fontWeight: FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // Horizontal card
 class _HorizontalCard extends StatelessWidget {

@@ -5,6 +5,7 @@ import '../../../library/presentation/screens/settings_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:luma_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:luma_app/features/home/presentation/screens/home_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -15,8 +16,12 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   /// Extract a display name from email: "user@gmail.com" → "user"
-  String _displayName(String? email) {
-    if (email == null || email.isEmpty) return 'Pengguna';
+  String _displayName(User? user) {
+    if (user == null) return 'Pengguna';
+    final metaName = user.userMetadata?['display_name'] as String?;
+    if (metaName != null && metaName.trim().isNotEmpty) return metaName.trim();
+    final email = user.email ?? '';
+    if (email.isEmpty) return 'Pengguna';
     return email.split('@').first;
   }
 
@@ -39,7 +44,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
-    final displayName = _displayName(user?.email);
+    final displayName = _displayName(user);
     final memberSince = _memberSince(user?.createdAt);
 
     return Scaffold(
@@ -82,6 +87,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
             ],
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 36,
+              child: OutlinedButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditProfileScreen(currentDisplayName: displayName),
+                    ),
+                  );
+                  if (result == true) {
+                    // Force rebuild to get updated auth metadata
+                    setState(() {});
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white24),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                ),
+                child: const Text('Edit Profil', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+            ),
             const SizedBox(height: 32),
             _tile(
               context,
