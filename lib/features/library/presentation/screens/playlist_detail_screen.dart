@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -168,10 +169,32 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
           // ── Track List ──
           if (_loading)
-            const SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(
-                    color: LumaColors.accent, strokeWidth: 2),
+            SliverFillRemaining(
+              child: Skeletonizer(
+                enabled: true,
+                effect: const ShimmerEffect(
+                  baseColor: Color(0xFF1E1E1E),
+                  highlightColor: Color(0xFF2E2E2E),
+                  duration: Duration(milliseconds: 1200),
+                ),
+                child: ListView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 7,
+                  itemBuilder: (_, __) => ListTile(
+                    leading: Container(
+                      width: 48, height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    title: Container(height: 13, width: 180, color: Colors.white),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Container(height: 11, width: 100, color: Colors.white),
+                    ),
+                  ),
+                ),
               ),
             )
           else if (_songs.isEmpty)

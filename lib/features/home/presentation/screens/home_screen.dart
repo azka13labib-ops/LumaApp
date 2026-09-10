@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_cache_service.dart';
@@ -180,7 +181,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildBody() {
-    if (_loading) return const Center(child: CircularProgressIndicator(color: LumaColors.accent, strokeWidth: 2));
+    if (_loading) return _HomeSkeleton();
 
     if (_error != null && _cachedTracks.isEmpty && _recentlyPlayed.isEmpty && _likedSongs.isEmpty) {
       return Center(child: Padding(
@@ -400,3 +401,122 @@ class _HorizontalCard extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Skeleton loading for the home screen
+// ---------------------------------------------------------------------------
+class _HomeSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Skeletonizer(
+      enabled: true,
+      effect: const ShimmerEffect(
+        baseColor: Color(0xFF1E1E1E),
+        highlightColor: Color(0xFF2E2E2E),
+        duration: Duration(milliseconds: 1200),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 160),
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section 1 header
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('Baru saja didengar',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+            ),
+            // Horizontal cards row
+            SizedBox(
+              height: 168,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 5,
+                itemBuilder: (_, __) => Container(
+                  width: 120,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(width: 120, height: 120, color: LumaColors.darkSurface),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(height: 11, width: 90, color: Colors.white),
+                      const SizedBox(height: 4),
+                      Container(height: 10, width: 60, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Section 2 header
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Text('Lagu Disukai',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+            ),
+            SizedBox(
+              height: 168,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 5,
+                itemBuilder: (_, __) => Container(
+                  width: 120,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(width: 120, height: 120, color: LumaColors.darkSurface),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(height: 11, width: 90, color: Colors.white),
+                      const SizedBox(height: 4),
+                      Container(height: 10, width: 60, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Section 3 – artist circles
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Text('Artis untukmu',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+            ),
+            SizedBox(
+              height: 128,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 6,
+                itemBuilder: (_, __) => Container(
+                  width: 96,
+                  margin: const EdgeInsets.only(right: 14),
+                  child: Column(
+                    children: [
+                      const CircleAvatar(radius: 40, backgroundColor: LumaColors.darkSurface),
+                      const SizedBox(height: 8),
+                      Container(height: 11, width: 64, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

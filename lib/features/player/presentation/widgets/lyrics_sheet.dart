@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/services/lyrics_service.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -72,8 +73,27 @@ class _LyricsSheetState extends State<LyricsSheet> {
                 future: _future,
                 builder: (context, snap) {
                   if (snap.connectionState != ConnectionState.done) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: LumaColors.accent, strokeWidth: 2),
+                    // Show lyric-line skeleton instead of a plain spinner
+                    final widths = [220.0, 180.0, 240.0, 160.0, 210.0, 190.0, 230.0, 150.0, 200.0, 170.0];
+                    return Skeletonizer(
+                      enabled: true,
+                      effect: const ShimmerEffect(
+                        baseColor: Color(0xFF1E1E1E),
+                        highlightColor: Color(0xFF2E2E2E),
+                        duration: Duration(milliseconds: 1200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (int i = 0; i < widths.length; i++) ...[
+                              Container(height: 14, width: widths[i], color: Colors.white),
+                              const SizedBox(height: 18),
+                            ],
+                          ],
+                        ),
+                      ),
                     );
                   }
                   if (snap.hasError || snap.data == null) {

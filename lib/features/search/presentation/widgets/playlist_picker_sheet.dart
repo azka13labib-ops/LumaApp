@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/services/youtube_service.dart';
@@ -39,11 +40,29 @@ class PlaylistPickerSheet extends StatelessWidget {
                 .order('created_at'),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                        child: CircularProgressIndicator(
-                            color: LumaColors.accent, strokeWidth: 2)));
+                return Skeletonizer(
+                  enabled: true,
+                  effect: const ShimmerEffect(
+                    baseColor: Color(0xFF1E1E1E),
+                    highlightColor: Color(0xFF2E2E2E),
+                    duration: Duration(milliseconds: 1200),
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: 4,
+                    itemBuilder: (_, __) => ListTile(
+                      leading: Container(
+                        width: 44, height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E1E),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      title: Container(height: 13, width: 140, color: Colors.white),
+                    ),
+                  ),
+                );
               }
               if (snapshot.hasError) {
                 return Padding(
