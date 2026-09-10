@@ -113,6 +113,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     _player.playingStream.listen((playing) {
       if (mounted) state = state.copyWith(isPlaying: playing);
     });
+    // Swallow async playback errors — just_audio can otherwise surface an
+    // unhandled platform exception that crashes the app mid-stick.
+    _player.errorStream.listen((e) {
+      debugPrint('[Player] just_audio errorStream: ${e.code} ${e.message}');
+    });
     _player.positionStream.listen((pos) {
       if (mounted) state = state.copyWith(position: pos);
     });
@@ -180,20 +185,9 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
   Future<void> seekTo(Duration pos) => _player.seek(pos);
 
-  Future<void> seekForward(Duration duration) async {
-    final newPos = state.position + duration;
-    if (newPos < state.duration) {
-      await _player.seek(newPos);
-    } else {
-      await _player.seek(state.duration);
-    }
-  }
+  Future<void> seekBackward(Duration sec) => seekTo(state.position - sec);
+  Future<void> seekForward(Duration sec) => seekTo(state.position + sec);
 
-  Future<void> seekBackward(Duration duration) async {
-    final newPos = state.position - duration;
-    final clamped = newPos < Duration.zero ? Duration.zero : newPos;
-    await _player.seek(clamped);
-  }
 
   Future<void> next() async {
     if (state.queue.isEmpty) return;
@@ -250,19 +244,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     state = state.copyWith(repeatMode: next);
   }
 
-  /// Insert after the current track (Spotify-style "Play next").
-  void playNext(MusicItem item) {
-    if (state.queue.isEmpty || state.current == null) {
-      play([item], 0);
-      return;
-    }
-    final q = List<MusicItem>.from(state.queue);
-    q.insert(state.currentIndex + 1, item);
-    if (!state.isShuffled) {
-      _orderBackup = List<MusicItem>.from(q);
-    }
-    state = state.copyWith(queue: q);
-  }
 
   void addToQueue(MusicItem item) {
     if (state.queue.isEmpty) {
@@ -424,11 +405,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     final myId = ++_loadId;
 
     try {
-      // Stop whatever was playing first to release the platform player lock.
-      await _player.stop();
-
-      if (!mounted || myId != _loadId) return; // stale → abort silently
-
+      // Resolve the audio source BEFORE touching the player. Stopping the
+      // player first and then waiting 20-120s for youtube-mp36 leaves just_audio
+      // with a null currentIndex — just_audio_background broadcasts the media
+      // session state during that window and can crash on some ROMs. Keeping
+      // the previous source loaded (or idle/loaded) until the swap avoids it.
       final cached = await OfflineCacheService.instance.isCached(item.id);
 
       if (!mounted || myId != _loadId) return;
@@ -550,8 +531,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     final currentId = state.current?.id;
     final candidates = <MusicItem>[];
     for (final t in pool) {
-      if (t.id.isEmpty || t.id == currentId || seen.contains(t.id)) continue;
-      seen.add(t.id);
+      if (t.id.isEmpty || t.id == currentId || !seen.add(t.id)) continue;
       candidates.add(t);
     }
 
@@ -583,19 +563,15 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
     try {
-      await Supabase.instance.client
-          .from('recently_played')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('youtube_id', item.id);
-      await Supabase.instance.client.from('recently_played').insert({
+      // Single upsert on (user_id, youtube_id) — no double round-trip
+      await Supabase.instance.client.from('recently_played').upsert({
         'user_id': user.id,
         'youtube_id': item.id,
         'title': item.title,
         'artist': item.author,
         'cover_url': item.thumbnailUrl,
         'played_at': DateTime.now().toIso8601String(),
-      });
+      }, onConflict: 'user_id,youtube_id');
     } catch (e) {
       debugPrint('[Player] saveRecentlyPlayed error: $e');
     }

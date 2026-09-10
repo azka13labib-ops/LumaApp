@@ -1,146 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// â”€â”€â”€ LumaApp Design Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Accent: Royal Blue â€” used ONLY on interactive focal points (buttons, toggles,
+// ── LumaApp Design Tokens ──────────────────────────────────────────────────
+// Accent: Royal Blue – used ONLY on interactive focal points (buttons, toggles,
 //   active seek bar, active lyric). Never as background decoration.
-// Rationale (R-29, R-31): 2 core neutrals + 1 accent. No extra colors.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Rationale: 2 core neutrals + 1 accent. No extra colors.
+// ──────────────────────────────────────────────────────────────────────────
 
 class LumaColors {
   LumaColors._();
 
-  // Accent â€” one deliberate accent, used sparingly (antislop Part 3)
+  // Accent — one deliberate accent, used sparingly
   static const Color accent = Color(0xFF0055FF); // Royal Blue
 
-  // Light Mode palette
-  static const Color lightBg        = Color(0xFFFFFFFF);
-  static const Color lightSurface   = Color(0xFFF5F5F7); // subtle off-white card
-  static const Color lightDivider   = Color(0xFFE0E0E0);
-  static const Color lightTextPrimary   = Color(0xFF1A1A1A);
-  static const Color lightTextSecondary = Color(0xFF6E6E73);
-
   // Dark Mode palette
-  static const Color darkBg         = Color(0xFF000000);
-  static const Color darkSurface    = Color(0xFF111111);
-  static const Color darkDivider    = Color(0xFF2A2A2A);
-  static const Color darkTextPrimary   = Color(0xFFFFFFFF);
-  static const Color darkTextSecondary = Color(0xFF8E8E93);
+  static const Color darkBg              = Color(0xFF000000);
+  static const Color darkSurface        = Color(0xFF111111);
+  static const Color darkDivider        = Color(0xFF2A2A2A);
+  static const Color darkTextPrimary    = Color(0xFFFFFFFF);
+  static const Color darkTextSecondary  = Color(0xFF8E8E93);
 }
 
 class AppTheme {
   AppTheme._();
-
-  static ThemeData get light => ThemeData(
-    brightness: Brightness.light,
-    useMaterial3: true,
-    scaffoldBackgroundColor: LumaColors.lightBg,
-    colorScheme: const ColorScheme.light(
-      primary: LumaColors.accent,
-      secondary: LumaColors.accent,
-      surface: LumaColors.lightSurface,
-      onPrimary: Colors.white,
-      onSurface: LumaColors.lightTextPrimary,
-    ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: LumaColors.lightBg,
-      foregroundColor: LumaColors.lightTextPrimary,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      systemOverlayStyle: SystemUiOverlayStyle.dark,
-      centerTitle: false,
-      titleTextStyle: TextStyle(
-        color: LumaColors.lightTextPrimary,
-        fontSize: 17,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.3,
-      ),
-    ),
-    textTheme: const TextTheme(
-      // Large title (screen heading)
-      headlineMedium: TextStyle(
-        color: LumaColors.lightTextPrimary,
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.5,
-      ),
-      // Track title
-      titleMedium: TextStyle(
-        color: LumaColors.lightTextPrimary,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.2,
-      ),
-      // Artist / subtitle
-      bodyMedium: TextStyle(
-        color: LumaColors.lightTextSecondary,
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-      ),
-      // Timestamps / labels
-      labelSmall: TextStyle(
-        color: LumaColors.lightTextSecondary,
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-    dividerColor: LumaColors.lightDivider,
-    dividerTheme: const DividerThemeData(
-      color: LumaColors.lightDivider,
-      thickness: 0.5,
-      space: 0,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: LumaColors.accent,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
-          letterSpacing: -0.2,
-        ),
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: LumaColors.lightSurface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide.none,
-      ),
-      hintStyle: const TextStyle(
-        color: LumaColors.lightTextSecondary,
-        fontSize: 15,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    ),
-    switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) =>
-        states.contains(WidgetState.selected) ? Colors.white : LumaColors.lightTextSecondary),
-      trackColor: WidgetStateProperty.resolveWith((states) =>
-        states.contains(WidgetState.selected) ? LumaColors.accent : LumaColors.lightDivider),
-    ),
-    sliderTheme: const SliderThemeData(
-      activeTrackColor: LumaColors.accent,
-      inactiveTrackColor: LumaColors.lightDivider,
-      thumbColor: LumaColors.accent,
-      trackHeight: 3,
-      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 7),
-      overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
-    ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: LumaColors.darkSurface,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      showCloseIcon: true,
-      closeIconColor: Colors.white54,
-      contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
-    ),
-  );
 
   static ThemeData get dark => ThemeData(
     brightness: Brightness.dark,

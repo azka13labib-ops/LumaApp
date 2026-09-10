@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +6,7 @@ import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../player/presentation/widgets/track_row.dart';
+import '../../../../core/widgets/luma_list_skeleton.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -106,7 +106,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildBody() {
-    if (_loading) return _SearchSkeleton();
+    if (_loading) return const LumaListSkeleton(count: 8);
 
     if (_error != null) {
       return Center(child: Padding(
@@ -164,41 +164,4 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
        },
       );
    }
-}
-
-// ---------------------------------------------------------------------------
-// Skeleton for search results
-// ---------------------------------------------------------------------------
-class _SearchSkeleton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Skeletonizer(
-      enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: Color(0xFF1E1E1E),
-        highlightColor: Color(0xFF2E2E2E),
-        duration: Duration(milliseconds: 1200),
-      ),
-      child: ListView.builder(
-        padding: const EdgeInsets.only(top: 4, bottom: 160),
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 8,
-        itemBuilder: (_, __) => ListTile(
-          leading: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          title: Container(height: 13, width: 180, color: Colors.white),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Container(height: 11, width: 100, color: Colors.white),
-          ),
-        ),
-      ),
-    );
-  }
 }

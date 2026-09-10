@@ -50,44 +50,25 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   User? _user;
-  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
     _user = Supabase.instance.client.auth.currentUser;
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      if (mounted) {
-        setState(() {
-          _user = data.session?.user;
-          _initialized = true;
-        });
-      }
-    });
-    // Jika tidak ada trigger event setelah init, update flag
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (!_initialized && mounted) {
-        setState(() => _initialized = true);
-      }
+      if (mounted) setState(() => _user = data.session?.user);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_initialized) {
-      return const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(backgroundColor: LumaColors.darkBg, body: Center(child: CircularProgressIndicator())),
-      );
-    }
-    
     return MaterialApp(
       title: 'LumaApp',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
-      theme: AppTheme.light,
+      theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
-      home: _user == null ? const LoginScreen() : const MainShell(), 
+      home: _user == null ? const LoginScreen() : const MainShell(),
     );
   }
 }

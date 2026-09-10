@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
+typedef _Feature = ({IconData icon, String title, String subtitle});
+
 class PremiumScreen extends StatelessWidget {
   const PremiumScreen({super.key});
 
-  static const _features = [
-    _Feature(Icons.block_rounded, 'Tanpa iklan', 'Putar musik tanpa gangguan iklan sama sekali.'),
-    _Feature(Icons.download_rounded, 'Unduh offline', 'Simpan lagu favorit dan dengarkan tanpa internet.'),
-    _Feature(Icons.shuffle_rounded, 'Acak & ulangi bebas', 'Kontrol penuh atas antrean dan urutan lagu.'),
-    _Feature(Icons.high_quality_rounded, 'Kualitas audio tinggi', 'Nikmati suara jernih hingga 320 kbps.'),
-    _Feature(Icons.skip_next_rounded, 'Skip tak terbatas', 'Lewati lagu sebanyak yang kamu mau.'),
-    _Feature(Icons.devices_rounded, 'Multi-perangkat', 'Dengarkan di HP, tablet, dan komputer sekaligus.'),
+  static const List<_Feature> _features = [
+    (icon: Icons.block_rounded, title: 'Tanpa iklan', subtitle: 'Putar musik tanpa gangguan iklan sama sekali.'),
+    (icon: Icons.download_rounded, title: 'Unduh offline', subtitle: 'Simpan lagu favorit dan dengarkan tanpa internet.'),
+    (icon: Icons.shuffle_rounded, title: 'Acak & ulangi bebas', subtitle: 'Kontrol penuh atas antrean dan urutan lagu.'),
+    (icon: Icons.high_quality_rounded, title: 'Kualitas audio tinggi', subtitle: 'Nikmati suara jernih hingga 320 kbps.'),
+    (icon: Icons.skip_next_rounded, title: 'Skip tak terbatas', subtitle: 'Lewati lagu sebanyak yang kamu mau.'),
+    (icon: Icons.devices_rounded, title: 'Multi-perangkat', subtitle: 'Dengarkan di HP, tablet, dan komputer sekaligus.'),
   ];
 
   @override
@@ -120,13 +122,6 @@ class PremiumScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Feature {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  const _Feature(this.icon, this.title, this.subtitle);
 }
 
 class _FeatureRow extends StatelessWidget {

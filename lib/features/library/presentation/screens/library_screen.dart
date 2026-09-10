@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/youtube_service.dart';
+import '../../../../core/widgets/luma_list_skeleton.dart';
 import '../../../playlist/presentation/screens/create_playlist_screen.dart';
 import 'liked_songs_screen.dart';
 import 'playlist_detail_screen.dart';
@@ -225,7 +225,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             // ── Body ──
             Expanded(
               child: _loading
-                  ? _LibrarySkeleton()
+                  ? const LumaListSkeleton(count: 6)
                   : RefreshIndicator(
                       onRefresh: _fetchAll,
                       color: LumaColors.accent,
@@ -419,43 +419,6 @@ class _PlaylistRow extends StatelessWidget {
           style: TextStyle(color: Colors.white54, fontSize: 12)),
       trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white30),
       onTap: onTap,
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Skeleton for the library screen list
-// ---------------------------------------------------------------------------
-class _LibrarySkeleton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Skeletonizer(
-      enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: Color(0xFF1E1E1E),
-        highlightColor: Color(0xFF2E2E2E),
-        duration: Duration(milliseconds: 1200),
-      ),
-      child: ListView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 6,
-        itemBuilder: (_, __) => ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          title: Container(height: 13, width: 160, color: Colors.white),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Container(height: 11, width: 90, color: Colors.white),
-          ),
-        ),
-      ),
     );
   }
 }
