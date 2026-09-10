@@ -104,16 +104,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   // ponytail: 3-slot ConcatenatingAudioSource trick — keeps dummy slots at
   // index 0 (prev) and index 2 (next) so just_audio_background always reports
   // hasNext/hasPrevious = true, showing prev/play/next in the notification.
-  // Ceiling: 3 silent sources always allocated; upgrade path = real queue mode.
-  late final ConcatenatingAudioSource _playlist;
+  // A fresh playlist is created per load to avoid race conditions.
+  // Ceiling: 3 silent sources allocated per track load; upgrade path = real queue mode.
   bool _handlingNotificationSkip = false;
 
   PlayerNotifier() : super(const PlayerState()) {
-    _playlist = ConcatenatingAudioSource(children: [
-      _silentSource(),
-      _silentSource(),
-      _silentSource(),
-    ]);
 
     _player.playingStream.listen((playing) {
       if (mounted) state = state.copyWith(isPlaying: playing);
@@ -147,12 +142,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     });
   }
 
-  /// A minimal silent audio source used as a dummy prev/next slot.
-  /// ponytail: uses 1-second silence so OS notification shows prev/play/next.
-  /// Won't play audibly; _loadAndPlay stops it immediately on index change.
+  /// Minimal silent audio — jsDelivr CDN, no auth, 250ms silence.
+  /// ponytail: slots 0 & 2 trick just_audio_background into showing prev/play/next.
+  /// Ceiling: requires network on first play; upgrade path = bundle silence.mp3 as asset.
   AudioSource _silentSource() => AudioSource.uri(
-        Uri.parse(
-            'https://upload.wikimedia.org/wikipedia/commons/6/6e/Silence.mp3'),
+        Uri.parse('https://cdn.jsdelivr.net/gh/anars/blank-audio@master/250-milliseconds-of-silence.mp3'),
         tag: const MediaItem(id: '__dummy__', title: ''),
       );
 
@@ -449,15 +443,18 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       if (realSource == null) throw Exception('Tidak dapat memuat audio');
 
-      // Replace slot 1 (middle) with the real source; keep dummy slots at 0 & 2
-      // so just_audio_background sees hasNext/hasPrevious = true → shows
-      // prev/play/next in the notification instead of stop/pause.
-      await _playlist.removeAt(1);
-      await _playlist.insert(1, realSource);
+      // ponytail: fresh 3-slot playlist per load — no mutation of live playlist,
+      // no race condition. Slots 0 & 2 are silent dummies so the notification
+      // always shows prev/play/next. Ceiling: 3 silent sources per load.
+      final playlist = ConcatenatingAudioSource(children: [
+        _silentSource(),
+        realSource,
+        _silentSource(),
+      ]);
 
       if (!mounted || myId != _loadId) return;
 
-      await _player.setAudioSource(_playlist, initialIndex: 1);
+      await _player.setAudioSource(playlist, initialIndex: 1);
 
       if (!mounted || myId != _loadId) return;
 

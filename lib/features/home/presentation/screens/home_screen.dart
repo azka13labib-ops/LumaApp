@@ -70,8 +70,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final name = t.author.trim();
           if (name.isEmpty) continue;
           final key = name.toLowerCase();
-          if (seen.contains(key)) continue;
-          seen.add(key);
+          if (!seen.add(key)) continue;
           artists.add(name);
           if (artists.length >= 12) break;
         }
