@@ -134,8 +134,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
             ),
             value: settings.autoplay,
-            activeThumbColor: LumaColors.accent,
-            activeTrackColor: LumaColors.accent.withValues(alpha: 0.5),
+            activeColor: LumaColors.accent,
             onChanged: (val) {
               ref.read(settingsProvider.notifier).setAutoplay(val);
             },
@@ -150,8 +149,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
             ),
             value: settings.offlineOnly,
-            activeThumbColor: LumaColors.accent,
-            activeTrackColor: LumaColors.accent.withValues(alpha: 0.5),
+            activeColor: LumaColors.accent,
             onChanged: (val) {
               ref.read(settingsProvider.notifier).setOfflineOnly(val);
             },
@@ -206,8 +204,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
             ),
             value: settings.showNotificationControls,
-            activeThumbColor: LumaColors.accent,
-            activeTrackColor: LumaColors.accent.withValues(alpha: 0.5),
+            activeColor: LumaColors.accent,
             onChanged: (val) {
               ref.read(settingsProvider.notifier).setShowNotificationControls(val);
             },

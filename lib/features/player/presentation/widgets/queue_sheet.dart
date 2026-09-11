@@ -63,7 +63,7 @@ class QueueSheet extends ConsumerWidget {
                       scrollController: scrollController,
                       padding: const EdgeInsets.only(bottom: 24),
                       itemCount: queue.length,
-                      onReorderItem: (oldIndex, newIndex) {
+                      onReorder: (oldIndex, newIndex) {
                         ref.read(playerProvider.notifier).reorderQueue(oldIndex, newIndex);
                       },
                       itemBuilder: (context, i) {

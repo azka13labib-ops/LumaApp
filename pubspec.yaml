@@ -42,7 +42,7 @@ dependencies:
   flutter_dotenv: any
   just_audio_background: ^0.0.1-beta.17
   palette_generator: ^0.3.3
-  skeletonizer: ^2.0.0
+  skeletonizer: any
 
 dev_dependencies:
   flutter_test:
