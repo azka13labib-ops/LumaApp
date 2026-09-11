@@ -217,13 +217,8 @@ class YouTubeService {
       debugPrint('[LumaApp] Getting audio stream for: ${item.title}');
       final link = await resolveStreamUrl(item, quality: quality);
       if (link == null) return null;
-      debugPrint('[LumaApp] Got audio link: $link');
       return AudioSource.uri(
         Uri.parse(link),
-        headers: const {
-          'User-Agent':
-              'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-        },
         tag: _mediaTag(item),
       );
     } catch (e) {
