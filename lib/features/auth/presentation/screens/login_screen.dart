@@ -24,10 +24,19 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    final email = _emailCtrl.text.trim();
+    final email = _emailCtrl.text.trim().toLowerCase();
     final pass  = _passCtrl.text;
     if (email.isEmpty || pass.isEmpty) {
       setState(() => _error = 'Email dan password wajib diisi.');
+      return;
+    }
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(email)) {
+      setState(() => _error = 'Format email tidak valid.');
+      return;
+    }
+    if (pass.length > 128) {
+      setState(() => _error = 'Password terlalu panjang (maksimal 128 karakter).');
       return;
     }
     setState(() { _isLoading = true; _error = null; });

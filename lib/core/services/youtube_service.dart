@@ -86,9 +86,14 @@ class YouTubeService {
   /// - max 15 min duration (avoids podcasts, full albums)
   /// - min 1 min (avoids 30s clips)
   Future<List<MusicItem>> searchMusic(String query) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return const [];
+    // Guard against excessively long input payloads
+    final safeQuery = cleanQuery.length > 200 ? cleanQuery.substring(0, 200) : cleanQuery;
+
     try {
-      debugPrint('[LumaApp] Searching YouTube: $query');
-      final searchResults = await _yt.search.search(query);
+      debugPrint('[LumaApp] Searching YouTube: $safeQuery');
+      final searchResults = await _yt.search.search(safeQuery);
       return searchResults
           .where((v) =>
               v.duration != null &&
@@ -103,7 +108,7 @@ class YouTubeService {
           .toList();
     } catch (e) {
       debugPrint('[LumaApp] Search exception: $e');
-      if (kIsWeb) return _getWebDummyData(query);
+      if (kIsWeb) return _getWebDummyData(safeQuery);
       rethrow;
     }
   }
@@ -112,14 +117,17 @@ class YouTubeService {
   /// 1. Primary: youtube_explode_dart native manifest stream (Fast, Hi-Res, zero rate-limit)
   /// 2. Fallback: RapidAPI youtube-mp36 (if native manifest fails)
   Future<String?> resolveStreamUrl(MusicItem item) async {
-    if (item.id == 'dummy_web_id') {
+    final cleanId = item.id.trim();
+    if (cleanId.isEmpty) return null;
+
+    if (cleanId == 'dummy_web_id') {
       return 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
     }
 
     // 1. Primary: Direct YouTube native audio stream
     try {
-      debugPrint('[LumaApp] Resolving native stream for: ${item.id}');
-      final manifest = await _yt.videos.streamsClient.getManifest(item.id);
+      debugPrint('[LumaApp] Resolving native stream for: $cleanId');
+      final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
       final audioStream = manifest.audioOnly.withHighestBitrate();
       debugPrint('[LumaApp] Native stream resolved: ${audioStream.bitrate} ${audioStream.container.name}');
       return audioStream.url.toString();
@@ -133,9 +141,8 @@ class YouTubeService {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
     try {
       for (int attempt = 0; attempt < 2; attempt++) {
-        final request = await client
-            .getUrl(Uri.parse('https://$_host/dl?id=${item.id}'))
-            .timeout(const Duration(seconds: 10));
+        final uri = Uri.https(_host, '/dl', {'id': cleanId});
+        final request = await client.getUrl(uri).timeout(const Duration(seconds: 10));
 
         request.headers.set('x-rapidapi-host', _host);
         request.headers.set('x-rapidapi-key', _apiKey);

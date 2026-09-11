@@ -38,19 +38,26 @@ class OfflineCacheService {
     return dir;
   }
 
+  /// Sanitizes ID to prevent path traversal vulnerabilities (CWE-22).
+  /// Enforces safe alphanumeric, underscore, and hyphen characters.
+  static String safeId(String rawId) {
+    final sanitized = rawId.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '');
+    return sanitized.isEmpty ? 'invalid_id' : sanitized;
+  }
+
   Future<File> _audioFile(String youtubeId) async {
     final dir = await _cacheDir();
-    return File('${dir.path}/$youtubeId.mp3');
+    return File('${dir.path}/${safeId(youtubeId)}.mp3');
   }
 
   Future<File> _thumbFile(String youtubeId) async {
     final dir = await _cacheDir();
-    return File('${dir.path}/$youtubeId.jpg');
+    return File('${dir.path}/${safeId(youtubeId)}.jpg');
   }
 
   Future<File> _metaFile(String youtubeId) async {
     final dir = await _cacheDir();
-    return File('${dir.path}/$youtubeId.json');
+    return File('${dir.path}/${safeId(youtubeId)}.json');
   }
 
   Future<bool> isCached(String youtubeId) async {

@@ -35,6 +35,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       return;
     }
+    if (newName.length > 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama maksimal 50 karakter')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {

@@ -27,12 +27,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _register() async {
-    final email   = _emailCtrl.text.trim();
+    final email   = _emailCtrl.text.trim().toLowerCase();
     final pass    = _passCtrl.text;
     final confirm = _confirmCtrl.text;
 
     if (email.isEmpty || pass.isEmpty || confirm.isEmpty) {
       setState(() => _error = 'Semua kolom wajib diisi.');
+      return;
+    }
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(email)) {
+      setState(() => _error = 'Format email tidak valid.');
       return;
     }
     if (pass != confirm) {
@@ -41,6 +46,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (pass.length < 6) {
       setState(() => _error = 'Password minimal 6 karakter.');
+      return;
+    }
+    if (pass.length > 128) {
+      setState(() => _error = 'Password terlalu panjang (maksimal 128 karakter).');
       return;
     }
 
