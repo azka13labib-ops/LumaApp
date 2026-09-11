@@ -273,14 +273,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   void reorderQueue(int oldIndex, int newIndex) {
     if (oldIndex == newIndex) return;
     if (oldIndex < 0 || oldIndex >= state.queue.length) return;
-
-    var target = newIndex;
-    if (oldIndex < target) target -= 1;
-    if (target < 0 || target >= state.queue.length) return;
+    if (newIndex < 0 || newIndex >= state.queue.length) return;
 
     final q = List<MusicItem>.from(state.queue);
     final item = q.removeAt(oldIndex);
-    q.insert(target, item);
+    q.insert(newIndex, item);
 
     final currentId = state.current?.id;
     var newCurrent = q.indexWhere((t) => t.id == currentId);
@@ -427,15 +424,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       // ponytail: fresh 3-slot playlist per load — no mutation of live playlist,
       // no race condition. Slots 0 & 2 are silent dummies so the notification
       // always shows prev/play/next. Ceiling: 3 silent sources per load.
-      final playlist = ConcatenatingAudioSource(children: [
+      await _player.setAudioSources([
         _silentSource(),
         realSource,
         _silentSource(),
-      ]);
-
-      if (!mounted || myId != _loadId) return;
-
-      await _player.setAudioSource(playlist, initialIndex: 1);
+      ], initialIndex: 1);
 
       if (!mounted || myId != _loadId) return;
 
