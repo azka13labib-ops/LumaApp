@@ -138,12 +138,18 @@ class YouTubeService {
       if (streams.isEmpty) {
         audioStream = manifest.audioOnly.withHighestBitrate();
       } else {
-        streams.sort((a, b) => a.bitrate.compareTo(b.bitrate));
+        // Prioritize MP4/AAC for universal Android device playback
+        final mp4Streams = streams
+            .where((s) => s.container.name.toLowerCase() == 'mp4')
+            .toList();
+        final pool = mp4Streams.isNotEmpty ? mp4Streams : streams;
+        pool.sort((a, b) => a.bitrate.compareTo(b.bitrate));
+
         audioStream = switch (quality) {
-          AudioQuality.dataSaver => streams.first,
+          AudioQuality.dataSaver => pool.first,
           AudioQuality.standard =>
-            streams.length > 1 ? streams[streams.length ~/ 2] : streams.first,
-          AudioQuality.high || AudioQuality.auto => streams.last,
+            pool.length > 1 ? pool[pool.length ~/ 2] : pool.first,
+          AudioQuality.high || AudioQuality.auto => pool.last,
         };
       }
 
@@ -212,7 +218,14 @@ class YouTubeService {
       final link = await resolveStreamUrl(item, quality: quality);
       if (link == null) return null;
       debugPrint('[LumaApp] Got audio link: $link');
-      return AudioSource.uri(Uri.parse(link), tag: _mediaTag(item));
+      return AudioSource.uri(
+        Uri.parse(link),
+        headers: const {
+          'User-Agent':
+              'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        },
+        tag: _mediaTag(item),
+      );
     } catch (e) {
       debugPrint('[LumaApp] getAudioSource error: $e');
       throw Exception('Gagal mendapatkan stream: $e');

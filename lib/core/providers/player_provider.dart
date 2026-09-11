@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/offline_cache_service.dart';
@@ -103,13 +102,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   /// Original order before shuffle (restored when shuffle turns off).
   List<MusicItem> _orderBackup = [];
 
-  // ponytail: 3-slot ConcatenatingAudioSource trick — keeps dummy slots at
-  // index 0 (prev) and index 2 (next) so just_audio_background always reports
-  // hasNext/hasPrevious = true, showing prev/play/next in the notification.
-  // A fresh playlist is created per load to avoid race conditions.
-  // Ceiling: 3 silent sources allocated per track load; upgrade path = real queue mode.
-  bool _handlingNotificationSkip = false;
-
   final Ref? _ref;
 
   PlayerNotifier([this._ref]) : super(const PlayerState()) {
@@ -142,34 +134,12 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
           state = state.copyWith(isLoading: false, clearLoadingStatus: true);
         }
       }
-      // Only fire completed for the real track (slot 1), not dummy slots.
-      if (ps.processingState == ProcessingState.completed &&
-          _player.currentIndex == 1) {
+      // When the track finishes, trigger next
+      if (ps.processingState == ProcessingState.completed) {
         _onTrackCompleted();
       }
     });
-    // Intercept OS notification prev/next button presses.
-    _player.currentIndexStream.listen((index) {
-      if (!mounted || index == null || index == 1) return;
-      if (_handlingNotificationSkip) return;
-      _handlingNotificationSkip = true;
-      if (index == 0) {
-        previous().whenComplete(() => _handlingNotificationSkip = false);
-      } else if (index == 2) {
-        next().whenComplete(() => _handlingNotificationSkip = false);
-      } else {
-        _handlingNotificationSkip = false;
-      }
-    });
   }
-
-  /// Minimal silent audio — jsDelivr CDN, no auth, 250ms silence.
-  /// ponytail: slots 0 & 2 trick just_audio_background into showing prev/play/next.
-  /// Ceiling: requires network on first play; upgrade path = bundle silence.mp3 as asset.
-  AudioSource _silentSource() => AudioSource.uri(
-        Uri.parse('https://cdn.jsdelivr.net/gh/anars/blank-audio@master/250-milliseconds-of-silence.mp3'),
-        tag: const MediaItem(id: '__dummy__', title: ''),
-      );
 
   // -- Public API --------------------------------------------------------------
 
@@ -448,14 +418,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       if (realSource == null) throw Exception('Tidak dapat memuat audio');
 
-      // ponytail: fresh 3-slot playlist per load — no mutation of live playlist,
-      // no race condition. Slots 0 & 2 are silent dummies so the notification
-      // always shows prev/play/next. Ceiling: 3 silent sources per load.
-      await _player.setAudioSources([
-        _silentSource(),
-        realSource,
-        _silentSource(),
-      ], initialIndex: 1);
+      // Set real audio source directly without remote dummy dependencies
+      await _player.setAudioSource(realSource);
 
       if (!mounted || myId != _loadId) return;
 
@@ -491,20 +455,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         isDownloading: false,
         downloadingProgress: null,
         clearLoadingStatus: true,
+        error: 'Gagal memutar audio: $e',
       );
-
-      await Future.delayed(const Duration(milliseconds: 800));
-      if (mounted && !state.isPlaying) {
-        _tryAutoSkipOnError();
-      }
-    }
-  }
-
-  void _tryAutoSkipOnError() {
-    if (state.queue.isEmpty) return;
-    if (state.currentIndex < state.queue.length - 1) {
-      debugPrint('[Player] Auto-skipping to next after error');
-      _playAt(state.currentIndex + 1);
     }
   }
 
