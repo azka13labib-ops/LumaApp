@@ -101,20 +101,20 @@ class _MainShellState extends State<MainShell> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Mini player sits on top of the bottom nav — never clips list items
+            // Mini player sits on top of the bottom nav: never clips list items
             const MiniPlayer(),
             BottomNavigationBar(
               currentIndex: _currentIndex,
               onTap: (index) => setState(() => _currentIndex = index),
               type: BottomNavigationBarType.fixed,
               backgroundColor: LumaColors.darkBg,
-              selectedItemColor: Colors.white,
-              unselectedItemColor: Colors.white38,
+              selectedItemColor: LumaColors.accent,
+              unselectedItemColor: Colors.white60,
               selectedFontSize: 11,
               unselectedFontSize: 11,
               elevation: 0,
               items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+                BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Beranda'),
                 BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Cari'),
                 BottomNavigationBarItem(icon: Icon(Icons.library_music_rounded), label: 'Koleksi'),
                 BottomNavigationBarItem(icon: Icon(Icons.workspace_premium_rounded), label: 'Premium'),

@@ -35,7 +35,7 @@ class QueueSheet extends ConsumerWidget {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Antrian',
+                      'Antrean',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 17,
@@ -45,7 +45,7 @@ class QueueSheet extends ConsumerWidget {
                   ),
                   Text(
                     '${queue.length} lagu',
-                    style: const TextStyle(color: Colors.white38, fontSize: 13),
+                    style: const TextStyle(color: Colors.white60, fontSize: 13),
                   ),
                 ],
               ),
@@ -55,7 +55,7 @@ class QueueSheet extends ConsumerWidget {
               child: queue.isEmpty
                   ? const Center(
                       child: Text(
-                        'Antrian kosong',
+                        'Antrean kosong',
                         style: TextStyle(color: LumaColors.darkTextSecondary),
                       ),
                     )

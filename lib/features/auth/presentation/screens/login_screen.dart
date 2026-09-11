@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 56),
-              // Logo — focal point, accent used only on icon box
+              // Logo: focal point, accent used only on icon box
               Row(children: [
                 Container(
                   width: 44, height: 44,
@@ -105,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: LumaColors.accent,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.music_note_rounded, color: Colors.white, size: 24),
+                  child: const Icon(Icons.music_note_rounded, color: Colors.black, size: 24),
                 ),
                 const SizedBox(width: 12),
                 const Text('Luma', style: TextStyle(
@@ -196,44 +196,51 @@ class _LoginScreenState extends State<LoginScreen> {
               // Forgot password
               Align(
                 alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: _forgotPassword,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 4),
-                    child: Text('Lupa password?', style: TextStyle(
-                      color: LumaColors.accent, fontSize: 13, fontWeight: FontWeight.w500,
-                    )),
+                child: TextButton(
+                  onPressed: _forgotPassword,
+                  style: TextButton.styleFrom(
+                    foregroundColor: LumaColors.accent,
+                    minimumSize: const Size(48, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   ),
+                  child: const Text('Lupa password?', style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600,
+                  )),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // CTA — accent used only here as the primary action
+              // CTA: accent used only here as the primary action
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: LumaColors.accent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Colors.black,
                     elevation: 0,
-                    disabledBackgroundColor: const Color(0xFF003399),
+                    disabledBackgroundColor: LumaColors.accent.withValues(alpha: 0.3),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                      : const Text('Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5))
+                      : const Text('Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2)),
                 ),
               ),
               const SizedBox(height: 28),
 
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const Text('Belum punya akun?', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14)),
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                const SizedBox(width: 4),
+                TextButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                  style: TextButton.styleFrom(
+                    foregroundColor: LumaColors.accent,
+                    minimumSize: const Size(48, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                   child: const Text('Daftar', style: TextStyle(
-                    color: LumaColors.accent, fontSize: 14, fontWeight: FontWeight.w600,
+                    fontSize: 14, fontWeight: FontWeight.w700,
                   )),
                 ),
               ]),

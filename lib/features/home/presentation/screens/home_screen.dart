@@ -140,7 +140,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const Icon(Icons.wifi_off_rounded, color: Color(0xFF88FF88), size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      'Mode Offline — ${_cachedTracks.length} lagu tersedia',
+                      'Mode Offline: ${_cachedTracks.length} lagu tersedia',
                       style: const TextStyle(color: Color(0xFF88FF88), fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                   ],
@@ -161,15 +161,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       letterSpacing: -0.4,
                     ),
                   ),
-                  GestureDetector(
+                  InkWell(
+                    borderRadius: BorderRadius.circular(18),
                     onTap: () => Navigator.push(context,
                         MaterialPageRoute(builder: (_) => const ProfileScreen())),
                     child: CircleAvatar(
                       radius: 18,
-                      backgroundColor: LumaColors.accent.withValues(alpha: 0.3),
+                      backgroundColor: LumaColors.accent.withValues(alpha: 0.25),
                       child: Text(
                         initial,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: LumaColors.accent, fontSize: 15, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -364,7 +365,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   itemCount: _artists.length,
                   itemBuilder: (context, i) {
                     final name = _artists[i];
-                    return GestureDetector(
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(12),
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => ArtistScreen(artistName: name)),
@@ -424,7 +426,8 @@ class _HorizontalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
       onTap: onTap,
       child: Container(
         width: 120,

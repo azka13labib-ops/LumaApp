@@ -215,25 +215,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onPressed: _isLoading || _success ? null : _register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: LumaColors.accent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Colors.black,
                     elevation: 0,
-                    disabledBackgroundColor: const Color(0xFF003399),
+                    disabledBackgroundColor: LumaColors.accent.withValues(alpha: 0.3),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                      : const Text('Buat Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5))
+                      : const Text('Buat Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2)),
                 ),
               ),
               const SizedBox(height: 28),
 
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const Text('Sudah punya akun?', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14)),
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                const SizedBox(width: 4),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: LumaColors.accent,
+                    minimumSize: const Size(48, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                   child: const Text('Masuk', style: TextStyle(
-                    color: LumaColors.accent, fontSize: 14, fontWeight: FontWeight.w600,
+                    color: LumaColors.accent, fontSize: 14, fontWeight: FontWeight.w700,
                   )),
                 ),
               ]),

@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// Design Read: musik app, dark theme, ENERGY 2 / RHYTHM 2 / MOTION 1
-/// Focal point: nama input. Satu aksen biru pada tombol aktif.
+/// Focal point: nama input. Satu aksen lime pada tombol aktif.
 /// Tidak ada dekorasi tanpa tujuan.
 class CreatePlaylistScreen extends StatefulWidget {
   const CreatePlaylistScreen({super.key});
@@ -22,7 +22,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
   void initState() {
     super.initState();
     _nameController.addListener(() => setState(() {}));
-    // Fokus otomatis ke input — satu focal point, langsung ke tindakan
+    // Fokus otomatis ke input: satu focal point, langsung ke tindakan
     WidgetsBinding.instance.addPostFrameCallback((_) => _focusNode.requestFocus());
   }
 
@@ -86,33 +86,6 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          // Tombol simpan di AppBar (pola Spotify)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton(
-              onPressed: _canCreate ? _create : null,
-              style: TextButton.styleFrom(
-                foregroundColor: LumaColors.accent,
-                disabledForegroundColor: Colors.white24,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6)),
-              ),
-              child: _saving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: LumaColors.accent))
-                  : const Text(
-                      'Simpan',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -123,7 +96,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
             padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
             child: Column(
               children: [
-                // Cover art placeholder — satu focal point di tengah
+                // Cover art placeholder: satu focal point di tengah
                 Container(
                   width: 160,
                   height: 160,
@@ -150,7 +123,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                         ),
                 ),
 
-                // Tap to edit hint — ringan, bukan dekorasi
+                // Tap to edit hint: ringan, bukan dekorasi
                 const SizedBox(height: 12),
                 GestureDetector(
                   onTap: () => _focusNode.requestFocus(),
@@ -173,7 +146,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
 
                 const SizedBox(height: 32),
 
-                // ── Name input — focal point utama layar ini ──
+                // Name input: focal point utama layar ini
                 TextField(
                   controller: _nameController,
                   focusNode: _focusNode,
@@ -210,7 +183,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                 ),
 
                 const SizedBox(height: 8),
-                // Karakter counter — info, bukan dekorasi
+                // Karakter counter: info, bukan dekorasi
                 if (_nameController.text.isNotEmpty)
                   Align(
                     alignment: Alignment.centerRight,
@@ -226,40 +199,38 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
 
           const Spacer(),
 
-          // ── Tombol utama di bawah — CTA spesifik, bukan "Buat" generik ──
+          // Tombol utama di bawah: CTA spesifik
           Padding(
             padding: EdgeInsets.fromLTRB(
                 24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
             child: SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 52,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                      hasText ? Colors.white : const Color(0xFF1A1A1A),
+                      hasText ? LumaColors.accent : const Color(0xFF1A1A1A),
                   foregroundColor:
-                      hasText ? Colors.black : Colors.white30,
+                      hasText ? Colors.black : Colors.white38,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4)),
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: _canCreate ? _create : null,
                 child: _saving
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: hasText
-                              ? Colors.black54
-                              : Colors.white24,
+                          color: Colors.black,
                         ))
                     : Text(
-                        hasText ? 'Buat playlist' : 'Masukkan nama dulu',
+                        hasText ? 'Buat Playlist' : 'Masukkan Nama Playlist',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: hasText ? Colors.black : Colors.white24,
+                          color: hasText ? Colors.black : Colors.white38,
                           letterSpacing: -0.2,
                         ),
                       ),

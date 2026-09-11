@@ -113,7 +113,7 @@ class MiniPlayer extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      // Like — 44×44 touch target with haptic feedback
+                      // Like: 44x44 touch target with haptic feedback
                       SizedBox(
                         width: 44,
                         height: 44,
@@ -134,7 +134,7 @@ class MiniPlayer extends ConsumerWidget {
                           },
                         ),
                       ),
-                      // Play/Pause — 44×44 touch target with haptic feedback
+                      // Play/Pause: 44x44 touch target with haptic feedback
                       SizedBox(
                         width: 44,
                         height: 44,
@@ -178,7 +178,7 @@ class MiniPlayer extends ConsumerWidget {
                   ),
                 ),
               ),
-              // Progress bar — visible accent color at bottom
+              // Progress bar: visible accent color at bottom
               if (ps.duration.inMilliseconds > 0)
                 LinearProgressIndicator(
                   value: (ps.position.inMilliseconds /

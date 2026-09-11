@@ -9,7 +9,7 @@ import '../../../search/presentation/screens/artist_screen.dart';
 import '../widgets/lyrics_sheet.dart';
 import '../widgets/queue_sheet.dart';
 
-// Palette state provider — per-thumbnail URL
+// Palette state provider: per-thumbnail URL
 final _paletteProvider =
     FutureProvider.family<Color, String>((ref, url) async {
   if (url.isEmpty) return LumaColors.darkSurface;
@@ -285,9 +285,9 @@ class PlayerScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: bgColor.withValues(alpha: 0.6),
-                            blurRadius: 40,
-                            offset: const Offset(0, 20),
+                            color: Colors.black.withValues(alpha: 0.45),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
@@ -429,28 +429,58 @@ class PlayerScreen extends ConsumerWidget {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(_fmt(state.position),
-                              style: const TextStyle(
-                                  color: LumaColors.darkTextSecondary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500)),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_fmt(state.position),
+                                  style: const TextStyle(
+                                      color: LumaColors.darkTextSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500)),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(Icons.replay_10_rounded, size: 20, color: Colors.white70),
+                                onPressed: () => ref
+                                    .read(playerProvider.notifier)
+                                    .seekBackward(const Duration(seconds: 10)),
+                                tooltip: 'Mundur 10 detik',
+                              ),
+                            ],
+                          ),
                           if (state.isLoading && state.loadingStatus != null)
                             Text(
                               state.loadingStatus!,
                               style: const TextStyle(
-                                  color: Colors.white54,
+                                  color: Colors.white70,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500),
                             ),
-                          Text(_fmt(state.duration),
-                              style: const TextStyle(
-                                  color: LumaColors.darkTextSecondary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500)),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(Icons.forward_10_rounded, size: 20, color: Colors.white70),
+                                onPressed: () => ref
+                                    .read(playerProvider.notifier)
+                                    .seekForward(const Duration(seconds: 10)),
+                                tooltip: 'Maju 10 detik',
+                              ),
+                              const SizedBox(width: 8),
+                              Text(_fmt(state.duration),
+                                  style: const TextStyle(
+                                      color: LumaColors.darkTextSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500)),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -458,18 +488,18 @@ class PlayerScreen extends ConsumerWidget {
                 ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-              // ── Playback controls ──────────────────────────────────────
+              // -- Playback controls (5 primary actions with spacious touch targets) --
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Shuffle
                     _ControlBtn(
                       icon: Icons.shuffle_rounded,
-                      size: 22,
+                      size: 24,
                       color: shuffleActive ? LumaColors.accent : Colors.white70,
                       onTap: () =>
                           ref.read(playerProvider.notifier).toggleShuffle(),
@@ -478,29 +508,28 @@ class PlayerScreen extends ConsumerWidget {
                     // Skip Previous
                     _ControlBtn(
                       icon: Icons.skip_previous_rounded,
-                      size: 36,
+                      size: 38,
                       color: Colors.white,
                       onTap: () =>
                           ref.read(playerProvider.notifier).previous(),
                     ),
-                    // Skip Backward 10s
-                    _ControlBtn(
-                      icon: Icons.replay_10_rounded,
-                      size: 24,
-                      color: Colors.white54,
-                      onTap: () =>
-                          ref.read(playerProvider.notifier).seekBackward(const Duration(seconds: 10)),
-                    ),
-                    // Play/Pause
+                    // Play/Pause (Central Hero focal point)
                     GestureDetector(
                       onTap: () =>
                           ref.read(playerProvider.notifier).togglePlayPause(),
                       child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        width: 66,
+                        height: 66,
+                        decoration: BoxDecoration(
+                          color: LumaColors.accent,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: LumaColors.accent.withValues(alpha: 0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: state.isLoading
@@ -517,30 +546,22 @@ class PlayerScreen extends ConsumerWidget {
                                       ? Icons.pause_rounded
                                       : Icons.play_arrow_rounded,
                                   color: Colors.black,
-                                  size: 38,
+                                  size: 40,
                                 ),
                         ),
                       ),
                     ),
-                    // Skip Forward 10s
-                    _ControlBtn(
-                      icon: Icons.forward_10_rounded,
-                      size: 24,
-                      color: Colors.white54,
-                      onTap: () =>
-                          ref.read(playerProvider.notifier).seekForward(const Duration(seconds: 10)),
-                    ),
                     // Skip Next
                     _ControlBtn(
                       icon: Icons.skip_next_rounded,
-                      size: 36,
+                      size: 38,
                       color: Colors.white,
                       onTap: () => ref.read(playerProvider.notifier).next(),
                     ),
                     // Repeat
                     _ControlBtn(
                       icon: _repeatIcon(state.repeatMode),
-                      size: 22,
+                      size: 24,
                       color: repeatActive ? LumaColors.accent : Colors.white70,
                       onTap: () =>
                           ref.read(playerProvider.notifier).cycleRepeat(),
@@ -552,7 +573,7 @@ class PlayerScreen extends ConsumerWidget {
 
               const SizedBox(height: 24),
 
-              // ── Secondary actions ──────────────────────────────────────
+              // -- Secondary actions --
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -566,7 +587,7 @@ class PlayerScreen extends ConsumerWidget {
                     ),
                     _SecondaryBtn(
                       icon: Icons.queue_music_rounded,
-                      label: 'Antrian (${state.queue.length})',
+                      label: 'Antrean (${state.queue.length})',
                       onTap: () => _showQueue(context),
                     ),
                   ],
@@ -668,19 +689,19 @@ class _SecondaryBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white54, size: 18),
+            Icon(icon, color: Colors.white70, size: 18),
             const SizedBox(width: 6),
             Text(label,
                 style: const TextStyle(
-                    color: Colors.white54,
+                    color: Colors.white70,
                     fontSize: 13,
                     fontWeight: FontWeight.w500)),
           ],

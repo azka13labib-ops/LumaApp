@@ -169,17 +169,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       child: TextField(
                         controller: _searchController,
                         autofocus: true,
-                        style: const TextStyle(color: Colors.black87, fontSize: 14),
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
                         onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           hintText: 'Cari di koleksi kamu...',
-                          hintStyle: const TextStyle(color: Colors.black45, fontSize: 14),
-                          prefixIcon: const Icon(Icons.search_rounded, color: Colors.black45, size: 20),
+                          hintStyle: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
+                          prefixIcon: const Icon(Icons.search_rounded, color: LumaColors.darkTextSecondary, size: 20),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: LumaColors.darkSurface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: LumaColors.accent, width: 1.5),
                           ),
                           contentPadding: const EdgeInsets.symmetric(vertical: 0),
                         ),
@@ -198,7 +202,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     final selected = _filter == f;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: GestureDetector(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
                         onTap: () => setState(() => _filter = f),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
@@ -209,9 +214,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           ),
                           child: Text(f,
                               style: TextStyle(
-                                  color: selected ? Colors.white : Colors.white70,
+                                  color: selected ? Colors.black : Colors.white70,
                                   fontSize: 13,
-                                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
+                                  fontWeight: selected ? FontWeight.w700 : FontWeight.normal)),
                         ),
                       ),
                     );
