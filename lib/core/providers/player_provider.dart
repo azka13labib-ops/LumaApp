@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/offline_cache_service.dart';
+import '../services/settings_service.dart';
 import '../services/youtube_service.dart';
 
 enum RepeatMode { off, all, one }
@@ -108,10 +110,18 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   // Ceiling: 3 silent sources allocated per track load; upgrade path = real queue mode.
   bool _handlingNotificationSkip = false;
 
-  PlayerNotifier() : super(const PlayerState()) {
+  final Ref? _ref;
+
+  PlayerNotifier([this._ref]) : super(const PlayerState()) {
 
     _player.playingStream.listen((playing) {
-      if (mounted) state = state.copyWith(isPlaying: playing);
+      if (mounted) {
+        state = state.copyWith(
+          isPlaying: playing,
+          isLoading: playing ? false : state.isLoading,
+          clearLoadingStatus: playing ? true : false,
+        );
+      }
     });
     // Swallow async playback errors — just_audio can otherwise surface an
     // unhandled platform exception that crashes the app mid-stick.
@@ -126,6 +136,12 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     });
     _player.playerStateStream.listen((ps) {
       if (!mounted) return;
+      // Immediately cancel loading state as soon as player is ready or actively playing
+      if (ps.playing || ps.processingState == ProcessingState.ready) {
+        if (state.isLoading) {
+          state = state.copyWith(isLoading: false, clearLoadingStatus: true);
+        }
+      }
       // Only fire completed for the real track (slot 1), not dummy slots.
       if (ps.processingState == ProcessingState.completed &&
           _player.currentIndex == 1) {
@@ -179,7 +195,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     if (state.isPlaying) {
       await _player.pause();
     } else {
-      await _player.play();
+      state = state.copyWith(isLoading: false);
+      unawaited(_player.play());
     }
   }
 
@@ -197,7 +214,10 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     } else if (state.repeatMode == RepeatMode.all) {
       await _playAt(0);
     } else {
-      await _autoplayFromLibrary();
+      final autoplay = _ref?.read(settingsProvider).autoplay ?? true;
+      if (autoplay) {
+        await _autoplayFromLibrary();
+      }
     }
   }
 
@@ -408,6 +428,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       // session state during that window and can crash on some ROMs. Keeping
       // the previous source loaded (or idle/loaded) until the swap avoids it.
       final cached = await OfflineCacheService.instance.isCached(item.id);
+      final offlineOnly = _ref?.read(settingsProvider).offlineOnly ?? false;
+
+      if (offlineOnly && !cached) {
+        throw Exception('Mode Hanya Offline aktif: lagu ini belum tersimpan di perangkat.');
+      }
 
       if (!mounted || myId != _loadId) return;
 
@@ -415,7 +440,9 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         state = state.copyWith(loadingStatus: 'Menyiapkan pemutar…');
       }
 
-      final realSource = await _yt.getAudioSource(item);
+      final quality =
+          _ref?.read(settingsProvider).audioQuality ?? AudioQuality.auto;
+      final realSource = await _yt.getAudioSource(item, quality: quality);
 
       if (!mounted || myId != _loadId) return;
 
@@ -432,8 +459,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       if (!mounted || myId != _loadId) return;
 
-      await _player.play();
-
+      // Reset loading state right as playback begins so play button updates immediately
       if (mounted && myId == _loadId) {
         state = state.copyWith(
           isLoading: false,
@@ -444,6 +470,10 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
           clearLoadingStatus: true,
         );
       }
+
+      // Do NOT await _player.play(): in just_audio, play() completes only when
+      // playback pauses or finishes. Awaiting it would freeze execution here while playing.
+      unawaited(_player.play());
     } catch (e) {
       final isInterrupt = e.toString().contains('Loading interrupted') ||
           e.toString().contains('interrupted');
@@ -481,7 +511,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   Future<void> _onTrackCompleted() async {
     if (state.repeatMode == RepeatMode.one) {
       await _player.seek(Duration.zero);
-      await _player.play();
+      unawaited(_player.play());
       return;
     }
     await next();
@@ -579,5 +609,5 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 }
 
 final playerProvider = StateNotifierProvider<PlayerNotifier, PlayerState>(
-  (ref) => PlayerNotifier(),
+  (ref) => PlayerNotifier(ref),
 );

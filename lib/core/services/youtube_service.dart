@@ -8,6 +8,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 import 'offline_cache_service.dart';
+import 'settings_service.dart';
 
 class MusicItem {
   final String id;
@@ -116,7 +117,10 @@ class YouTubeService {
   /// Resolve remote audio stream URL (for streaming or offline download).
   /// 1. Primary: youtube_explode_dart native manifest stream (Fast, Hi-Res, zero rate-limit)
   /// 2. Fallback: RapidAPI youtube-mp36 (if native manifest fails)
-  Future<String?> resolveStreamUrl(MusicItem item) async {
+  Future<String?> resolveStreamUrl(
+    MusicItem item, {
+    AudioQuality quality = AudioQuality.auto,
+  }) async {
     final cleanId = item.id.trim();
     if (cleanId.isEmpty) return null;
 
@@ -126,9 +130,23 @@ class YouTubeService {
 
     // 1. Primary: Direct YouTube native audio stream
     try {
-      debugPrint('[LumaApp] Resolving native stream for: $cleanId');
+      debugPrint('[LumaApp] Resolving native stream for: $cleanId with quality: ${quality.name}');
       final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
-      final audioStream = manifest.audioOnly.withHighestBitrate();
+      final streams = manifest.audioOnly.toList();
+
+      AudioStreamInfo audioStream;
+      if (streams.isEmpty) {
+        audioStream = manifest.audioOnly.withHighestBitrate();
+      } else {
+        streams.sort((a, b) => a.bitrate.compareTo(b.bitrate));
+        audioStream = switch (quality) {
+          AudioQuality.dataSaver => streams.first,
+          AudioQuality.standard =>
+            streams.length > 1 ? streams[streams.length ~/ 2] : streams.first,
+          AudioQuality.high || AudioQuality.auto => streams.last,
+        };
+      }
+
       debugPrint('[LumaApp] Native stream resolved: ${audioStream.bitrate} ${audioStream.container.name}');
       return audioStream.url.toString();
     } catch (e) {
@@ -179,7 +197,10 @@ class YouTubeService {
   }
 
   /// Cache-First: prefer local file → fall back to CDN stream.
-  Future<AudioSource?> getAudioSource(MusicItem item) async {
+  Future<AudioSource?> getAudioSource(
+    MusicItem item, {
+    AudioQuality quality = AudioQuality.auto,
+  }) async {
     final local = await OfflineCacheService.instance.localPath(item.id);
     if (local != null) {
       debugPrint('[LumaApp] Playing offline: $local');
@@ -188,7 +209,7 @@ class YouTubeService {
 
     try {
       debugPrint('[LumaApp] Getting audio stream for: ${item.title}');
-      final link = await resolveStreamUrl(item);
+      final link = await resolveStreamUrl(item, quality: quality);
       if (link == null) return null;
       debugPrint('[LumaApp] Got audio link: $link');
       return AudioSource.uri(Uri.parse(link), tag: _mediaTag(item));
