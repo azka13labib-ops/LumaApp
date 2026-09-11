@@ -8,6 +8,7 @@ import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
+import '../../../search/presentation/screens/search_screen.dart';
 import '../../../../features/player/presentation/widgets/track_row.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -41,27 +42,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     setState(() { _loading = true; _error = null; });
     try {
-      final recentRes = await _supabase
+      final recentFuture = _supabase
           .from('recently_played')
           .select()
           .eq('user_id', user.id)
           .order('played_at', ascending: false)
           .limit(10);
-
-      final likedRes = await _supabase
+      final likedFuture = _supabase
           .from('liked_songs')
           .select()
           .eq('user_id', user.id)
           .order('liked_at', ascending: false)
           .limit(8);
+      final cachedFuture = OfflineCacheService.instance.listCached();
 
-      final cached = await OfflineCacheService.instance.listCached();
+      final results = await Future.wait<dynamic>([recentFuture, likedFuture, cachedFuture]);
+
+      final recentRes = results[0] as List;
+      final likedRes = results[1] as List;
+      final cached = results[2] as List<MusicItem>;
 
       if (mounted) {
-        final recent = (recentRes as List)
+        final recent = recentRes
             .map((e) => MusicItem.fromMap(Map<String, dynamic>.from(e as Map)))
             .toList();
-        final liked = (likedRes as List)
+        final liked = likedRes
             .map((e) => MusicItem.fromMap(Map<String, dynamic>.from(e as Map)))
             .toList();
 
@@ -244,14 +249,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ] else ...[
               // ONLINE MODE
               if (_recentlyPlayed.isEmpty && _likedSongs.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 48, 16, 16),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.headphones_rounded, color: Colors.white12, size: 64),
-                    SizedBox(height: 16),
-                    Text('Mulai cari lagu dan putar musik\nuntuk mengisi beranda kamu.',
-                      style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 15), textAlign: TextAlign.center),
-                  ]),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: const BoxDecoration(
+                          color: LumaColors.darkSurface,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.music_note_rounded, color: LumaColors.accent, size: 48),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Selamat Datang di Luma',
+                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Mulai dengarkan lagu favoritmu untuk mengisi beranda dengan riwayat dan rekomendasi.',
+                        style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14, height: 1.4),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          ActionChip(
+                            backgroundColor: LumaColors.darkSurface,
+                            side: const BorderSide(color: Colors.white12),
+                            label: const Text('Pop Indonesia', style: TextStyle(color: Colors.white, fontSize: 13)),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
+                          ),
+                          ActionChip(
+                            backgroundColor: LumaColors.darkSurface,
+                            side: const BorderSide(color: Colors.white12),
+                            label: const Text('Top Hits Global', style: TextStyle(color: Colors.white, fontSize: 13)),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
+                          ),
+                          ActionChip(
+                            backgroundColor: LumaColors.darkSurface,
+                            side: const BorderSide(color: Colors.white12),
+                            label: const Text('Lofi Chill', style: TextStyle(color: Colors.white, fontSize: 13)),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
+                          ),
+                          ActionChip(
+                            backgroundColor: LumaColors.darkSurface,
+                            side: const BorderSide(color: Colors.white12),
+                            label: const Text('Acoustic Relax', style: TextStyle(color: Colors.white, fontSize: 13)),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
 
               if (_recentlyPlayed.isNotEmpty) ...[

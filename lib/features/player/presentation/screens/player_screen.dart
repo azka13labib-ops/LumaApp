@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:palette_generator/palette_generator.dart';
 
@@ -52,7 +52,7 @@ class _DownloadBtn extends ConsumerWidget {
             ? CircularProgressIndicator(
                 strokeWidth: 2.5,
                 color: LumaColors.accent,
-                value: progress != null ? progress.clamp(0.0, 1.0) : null,
+                value: progress?.clamp(0.0, 1.0),
               )
             : Icon(
                 isCached ? Icons.download_done_rounded : Icons.download_rounded,
@@ -71,11 +71,11 @@ class _DownloadBtn extends ConsumerWidget {
             _modernSnack('Mengunduh…', isError: false, duration: const Duration(seconds: 2)),
           );
           await ref.read(playerProvider.notifier).downloadCurrent();
-          if (!context.mounted) return;
           final nowCached = await OfflineCacheService.instance.isCached(item.id);
+          if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             _modernSnack(
-              nowCached ? 'Berhasil diunduh 🎵' : 'Gagal mengunduh',
+              nowCached ? 'Berhasil diunduh' : 'Gagal mengunduh',
               isError: !nowCached,
             ),
           );
@@ -291,15 +291,18 @@ class PlayerScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          item.thumbnailUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFF1A1A1A),
-                            child: const Icon(Icons.music_note_rounded,
-                                color: Colors.white24, size: 64),
+                      child: Hero(
+                        tag: 'player_artwork_${item.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            item.thumbnailUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: const Color(0xFF1A1A1A),
+                              child: const Icon(Icons.music_note_rounded,
+                                  color: Colors.white24, size: 64),
+                            ),
                           ),
                         ),
                       ),

@@ -12,7 +12,6 @@ import 'package:luma_app/features/home/presentation/screens/home_screen.dart';
 import 'package:luma_app/features/search/presentation/screens/search_screen.dart';
 import 'package:luma_app/features/library/presentation/screens/library_screen.dart';
 import 'package:luma_app/features/premium/presentation/screens/premium_screen.dart';
-import 'package:luma_app/features/playlist/presentation/screens/create_playlist_screen.dart';
 import 'package:luma_app/features/player/presentation/widgets/mini_player.dart';
 
 void main() async {
@@ -106,27 +105,19 @@ class _MainShellState extends State<MainShell> {
             const MiniPlayer(),
             BottomNavigationBar(
               currentIndex: _currentIndex,
-              onTap: (index) {
-                if (index == 4) {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CreatePlaylistScreen()));
-                  return;
-                }
-                setState(() => _currentIndex = index);
-              },
+              onTap: (index) => setState(() => _currentIndex = index),
               type: BottomNavigationBarType.fixed,
               backgroundColor: LumaColors.darkBg,
               selectedItemColor: Colors.white,
               unselectedItemColor: Colors.white38,
-              selectedFontSize: 10,
-              unselectedFontSize: 10,
+              selectedFontSize: 11,
+              unselectedFontSize: 11,
               elevation: 0,
               items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
                 BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Cari'),
                 BottomNavigationBarItem(icon: Icon(Icons.library_music_rounded), label: 'Koleksi'),
                 BottomNavigationBarItem(icon: Icon(Icons.workspace_premium_rounded), label: 'Premium'),
-                BottomNavigationBarItem(icon: Icon(Icons.add_box_outlined), label: 'Buat'),
               ],
             ),
           ],

@@ -108,56 +108,67 @@ class YouTubeService {
     }
   }
 
-  /// Resolve remote MP3 URL (for streaming or offline download).
+  /// Resolve remote audio stream URL (for streaming or offline download).
+  /// 1. Primary: youtube_explode_dart native manifest stream (Fast, Hi-Res, zero rate-limit)
+  /// 2. Fallback: RapidAPI youtube-mp36 (if native manifest fails)
   Future<String?> resolveStreamUrl(MusicItem item) async {
     if (item.id == 'dummy_web_id') {
       return 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
     }
 
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 20);
-
+    // 1. Primary: Direct YouTube native audio stream
     try {
-      for (int attempt = 0; attempt < 5; attempt++) {
+      debugPrint('[LumaApp] Resolving native stream for: ${item.id}');
+      final manifest = await _yt.videos.streamsClient.getManifest(item.id);
+      final audioStream = manifest.audioOnly.withHighestBitrate();
+      debugPrint('[LumaApp] Native stream resolved: ${audioStream.bitrate} ${audioStream.container.name}');
+      return audioStream.url.toString();
+    } catch (e) {
+      debugPrint('[LumaApp] Native stream resolution failed ($e), falling back to RapidAPI...');
+    }
+
+    // 2. Fallback to RapidAPI only if native failed and API key exists
+    if (_apiKey.isEmpty) return null;
+
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
+    try {
+      for (int attempt = 0; attempt < 2; attempt++) {
         final request = await client
             .getUrl(Uri.parse('https://$_host/dl?id=${item.id}'))
-            .timeout(const Duration(seconds: 20));
+            .timeout(const Duration(seconds: 10));
 
         request.headers.set('x-rapidapi-host', _host);
         request.headers.set('x-rapidapi-key', _apiKey);
 
         final response =
-            await request.close().timeout(const Duration(seconds: 20));
+            await request.close().timeout(const Duration(seconds: 10));
         final body = await response
             .transform(utf8.decoder)
             .join()
-            .timeout(const Duration(seconds: 20));
+            .timeout(const Duration(seconds: 10));
 
         if (response.statusCode == 200) {
           final json = jsonDecode(body);
-
           if (json['status'] == 'ok' &&
               json['msg'] == 'success' &&
               json['link'] != null) {
             return json['link'] as String;
           } else if (json['msg'] == 'in progress' ||
               (json['progress'] != null && json['progress'] < 100)) {
-            debugPrint(
-                '[LumaApp] API in progress (${json['progress']}%), retrying...');
-            await Future.delayed(const Duration(seconds: 3));
+            await Future.delayed(const Duration(seconds: 2));
           } else {
-            throw Exception('Unexpected API response: $body');
+            break;
           }
-        } else if (response.statusCode == 429) {
-          debugPrint('[LumaApp] Rate limited, waiting 5s...');
-          await Future.delayed(const Duration(seconds: 5));
         } else {
-          throw Exception('youtube-mp36 HTTP error: ${response.statusCode}');
+          break;
         }
       }
-      throw Exception('Timeout: audio conversion took too long');
+    } catch (e) {
+      debugPrint('[LumaApp] RapidAPI fallback error: $e');
     } finally {
       client.close(force: true);
     }
+    return null;
   }
 
   /// Cache-First: prefer local file → fall back to CDN stream.
@@ -169,10 +180,10 @@ class YouTubeService {
     }
 
     try {
-      debugPrint('[LumaApp] Getting audio via youtube-mp36 for: ${item.title}');
+      debugPrint('[LumaApp] Getting audio stream for: ${item.title}');
       final link = await resolveStreamUrl(item);
       if (link == null) return null;
-      debugPrint('[LumaApp] Got MP3 link: $link');
+      debugPrint('[LumaApp] Got audio link: $link');
       return AudioSource.uri(Uri.parse(link), tag: _mediaTag(item));
     } catch (e) {
       debugPrint('[LumaApp] getAudioSource error: $e');

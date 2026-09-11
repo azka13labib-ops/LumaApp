@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -17,6 +18,16 @@ class MiniPlayer extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
       child: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          final vx = details.primaryVelocity ?? 0;
+          if (vx < -250) {
+            HapticFeedback.lightImpact();
+            ref.read(playerProvider.notifier).next();
+          } else if (vx > 250) {
+            HapticFeedback.lightImpact();
+            ref.read(playerProvider.notifier).previous();
+          }
+        },
         onTap: () => Navigator.push(
           context,
           PageRouteBuilder(
@@ -44,20 +55,23 @@ class MiniPlayer extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Row(
                     children: [
-                      // Artwork — consistent with list tile size
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.network(
-                          item.thumbnailUrl,
-                          width: 44,
-                          height: 44,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                      // Artwork with Hero animation
+                      Hero(
+                        tag: 'player_artwork_${item.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.network(
+                            item.thumbnailUrl,
                             width: 44,
                             height: 44,
-                            color: const Color(0xFF222222),
-                            child: const Icon(Icons.music_note_rounded,
-                                color: Colors.white24, size: 20),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 44,
+                              height: 44,
+                              color: const Color(0xFF222222),
+                              child: const Icon(Icons.music_note_rounded,
+                                  color: Colors.white24, size: 20),
+                            ),
                           ),
                         ),
                       ),
@@ -99,7 +113,7 @@ class MiniPlayer extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      // Like — 44×44 touch target
+                      // Like — 44×44 touch target with haptic feedback
                       SizedBox(
                         width: 44,
                         height: 44,
@@ -114,11 +128,13 @@ class MiniPlayer extends ConsumerWidget {
                                 : LumaColors.darkTextPrimary,
                             size: 20,
                           ),
-                          onPressed: () =>
-                              ref.read(playerProvider.notifier).toggleFavorite(),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(playerProvider.notifier).toggleFavorite();
+                          },
                         ),
                       ),
-                      // Play/Pause — 44×44 touch target
+                      // Play/Pause — 44×44 touch target with haptic feedback
                       SizedBox(
                         width: 44,
                         height: 44,
@@ -138,11 +154,13 @@ class MiniPlayer extends ConsumerWidget {
                                   color: LumaColors.darkTextPrimary,
                                   size: 28,
                                 ),
-                          onPressed: () =>
-                              ref.read(playerProvider.notifier).togglePlayPause(),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(playerProvider.notifier).togglePlayPause();
+                          },
                         ),
                       ),
-                      // Next
+                      // Next with haptic feedback
                       SizedBox(
                         width: 44,
                         height: 44,
@@ -150,26 +168,29 @@ class MiniPlayer extends ConsumerWidget {
                           padding: EdgeInsets.zero,
                           icon: const Icon(Icons.skip_next_rounded,
                               color: Colors.white70, size: 24),
-                          onPressed: () =>
-                              ref.read(playerProvider.notifier).next(),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(playerProvider.notifier).next();
+                          },
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              // Progress bar — 2px at very bottom
+              // Progress bar — visible accent color at bottom
               if (ps.duration.inMilliseconds > 0)
                 LinearProgressIndicator(
-                  value: ps.position.inMilliseconds /
-                      ps.duration.inMilliseconds,
+                  value: (ps.position.inMilliseconds /
+                          ps.duration.inMilliseconds)
+                      .clamp(0.0, 1.0),
                   backgroundColor: Colors.white12,
                   valueColor:
-                      const AlwaysStoppedAnimation<Color>(Colors.white54),
-                  minHeight: 2,
+                      const AlwaysStoppedAnimation<Color>(LumaColors.accent),
+                  minHeight: 2.5,
                 )
               else
-                const SizedBox(height: 2),
+                const SizedBox(height: 2.5),
             ],
           ),
         ),

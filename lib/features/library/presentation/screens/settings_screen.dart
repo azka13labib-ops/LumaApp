@@ -220,16 +220,15 @@ class SettingsScreen extends StatelessWidget {
                       fontSize: 17,
                       fontWeight: FontWeight.bold)),
             ),
-            const SizedBox(height: 8),
-            for (final q in ['Rendah (64kbps)', 'Sedang (128kbps)', 'Tinggi (320kbps)', 'Otomatis'])
-              ListTile(
-                title: Text(q, style: const TextStyle(color: Colors.white, fontSize: 15)),
-                trailing: q == 'Otomatis'
-                    ? const Icon(Icons.check_rounded, color: LumaColors.accent)
-                    : null,
-                onTap: () => Navigator.pop(ctx),
-              ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.check_circle_rounded, color: LumaColors.accent),
+              title: const Text('Otomatis (Tertinggi)', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+              subtitle: const Text('Mendukung hingga 256kbps AAC / 160kbps Opus langsung dari sumber YouTube native.',
+                  style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12)),
+              onTap: () => Navigator.pop(ctx),
+            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),

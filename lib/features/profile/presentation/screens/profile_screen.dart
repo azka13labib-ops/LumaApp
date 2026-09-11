@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../library/presentation/screens/settings_screen.dart';
+import '../../../library/presentation/screens/recently_played_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:luma_app/features/auth/presentation/screens/login_screen.dart';
-import 'package:luma_app/features/home/presentation/screens/home_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -117,7 +117,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               context,
               icon: Icons.history_rounded,
               label: 'Riwayat didengar',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeScreen())),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecentlyPlayedScreen())),
             ),
             _tile(
               context,

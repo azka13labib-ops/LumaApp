@@ -20,6 +20,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   Timer? _debounce;
+  bool _isDebouncing = false;
   List<MusicItem> _results = [];
   bool _loading = false;
   String? _error;
@@ -37,7 +38,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Future<void> _search(String q) async {
     if (q.trim().isEmpty) return;
     _focusNode.unfocus();
-    setState(() { _loading = true; _error = null; _searched = true; });
+    setState(() { _loading = true; _error = null; _searched = true; _isDebouncing = false; });
     try {
       final r = await _ytService.searchMusic(q);
       if (mounted) setState(() => _results = r);
@@ -66,25 +67,47 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   TextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    autofocus: true,
+                    autofocus: false,
                     style: const TextStyle(color: Colors.white, fontSize: 15),
                     textInputAction: TextInputAction.search,
                     onSubmitted: _search,
                     onChanged: (v) {
-                      setState(() {});
+                      setState(() {
+                        _isDebouncing = v.trim().length >= 2;
+                      });
                       _debounce?.cancel();
                       if (v.trim().length >= 2) {
                         _debounce = Timer(const Duration(milliseconds: 500), () => _search(v));
+                      } else {
+                        setState(() => _isDebouncing = false);
                       }
                     },
                     decoration: InputDecoration(
                       hintText: 'Lagu, artis, atau album',
                       hintStyle: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 15),
                       prefixIcon: const Icon(Icons.search_rounded, color: LumaColors.darkTextSecondary),
-                      suffixIcon: _controller.text.isNotEmpty
-                          ? IconButton(icon: const Icon(Icons.close_rounded, color: LumaColors.darkTextSecondary),
-                              onPressed: () { _controller.clear(); setState(() { _results = []; _searched = false; _error = null; }); })
-                          : null,
+                      suffixIcon: (_loading || _isDebouncing)
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: LumaColors.accent),
+                              ),
+                            )
+                          : _controller.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.close_rounded, color: LumaColors.darkTextSecondary),
+                                  onPressed: () {
+                                    _controller.clear();
+                                    setState(() {
+                                      _results = [];
+                                      _searched = false;
+                                      _error = null;
+                                      _isDebouncing = false;
+                                    });
+                                  })
+                              : null,
                       filled: true, fillColor: LumaColors.darkSurface,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                       focusedBorder: OutlineInputBorder(

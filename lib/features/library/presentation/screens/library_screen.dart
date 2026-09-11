@@ -300,16 +300,35 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.library_music_rounded, color: Colors.white12, size: 56),
+            const Icon(Icons.library_music_rounded, color: Colors.white12, size: 64),
             const SizedBox(height: 16),
             Text(
-              q.isNotEmpty ? 'Tidak ada hasil untuk "$q"' : 'Koleksi masih kosong',
-              style: const TextStyle(color: Colors.white54, fontSize: 14),
+              q.isNotEmpty ? 'Tidak ada hasil untuk "$q"' : 'Koleksi Masih Kosong',
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             ),
             if (q.isEmpty) ...[
               const SizedBox(height: 8),
-              const Text('Tambah playlist atau sukai lagu untuk mulai',
-                  style: TextStyle(color: Colors.white30, fontSize: 12)),
+              const Text('Buat playlist pertamamu dan kumpulkan lagu favoritmu di sini.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13)),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: LumaColors.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Buat Playlist Baru', style: TextStyle(fontWeight: FontWeight.w600)),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreatePlaylistScreen()),
+                  );
+                  _fetchAll();
+                },
+              ),
             ]
           ],
         ),

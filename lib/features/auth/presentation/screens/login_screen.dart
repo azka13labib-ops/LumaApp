@@ -34,12 +34,29 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await Supabase.instance.client.auth.signInWithPassword(email: email, password: pass);
     } on AuthException catch (e) {
-      setState(() => _error = e.message);
+      setState(() => _error = _translateAuthError(e.message));
     } catch (_) {
-      setState(() => _error = 'Terjadi kesalahan. Coba lagi.');
+      setState(() => _error = 'Terjadi kesalahan koneksi. Coba lagi.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _translateAuthError(String msg) {
+    final lower = msg.toLowerCase();
+    if (lower.contains('invalid login credentials') || lower.contains('invalid credentials')) {
+      return 'Email atau kata sandi salah. Silakan coba lagi.';
+    }
+    if (lower.contains('email not confirmed')) {
+      return 'Email kamu belum dikonfirmasi. Periksa kotak masuk emailmu.';
+    }
+    if (lower.contains('user not found')) {
+      return 'Akun dengan email ini tidak ditemukan.';
+    }
+    if (lower.contains('rate limit')) {
+      return 'Terlalu banyak percobaan masuk. Harap tunggu beberapa saat.';
+    }
+    return 'Gagal masuk: $msg';
   }
 
   Future<void> _forgotPassword() async {

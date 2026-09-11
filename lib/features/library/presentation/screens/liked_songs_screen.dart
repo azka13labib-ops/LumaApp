@@ -20,7 +20,7 @@ class LikedSongsScreen extends ConsumerWidget {
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
-            backgroundColor: const Color(0xFF450AF5),
+            backgroundColor: LumaColors.accent,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
               onPressed: () => Navigator.pop(context),
@@ -31,7 +31,7 @@ class LikedSongsScreen extends ConsumerWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF450AF5), Color(0xFF8DC9CF)],
+                    colors: [LumaColors.accent, Color(0xFF1E3A8A)],
                   ),
                 ),
                 child: Column(

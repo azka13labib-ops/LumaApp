@@ -52,12 +52,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) Navigator.pop(context);
     } on AuthException catch (e) {
-      setState(() => _error = e.message);
+      setState(() => _error = _translateAuthError(e.message));
     } catch (_) {
-      setState(() => _error = 'Terjadi kesalahan. Coba lagi.');
+      setState(() => _error = 'Terjadi kesalahan koneksi. Coba lagi.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _translateAuthError(String msg) {
+    final lower = msg.toLowerCase();
+    if (lower.contains('already registered') || lower.contains('already exists')) {
+      return 'Email ini sudah terdaftar. Silakan masuk.';
+    }
+    if (lower.contains('password should be at least')) {
+      return 'Kata sandi minimal harus 6 karakter.';
+    }
+    if (lower.contains('invalid email')) {
+      return 'Format email tidak valid.';
+    }
+    return 'Pendaftaran gagal: $msg';
   }
 
   @override
