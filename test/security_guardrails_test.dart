@@ -84,5 +84,15 @@ void main() {
       expect(isValidName('A' * 51), isFalse);
       expect(isValidName('A' * 5000), isFalse);
     });
+
+    test('Purple Team Re-verify: URL fragments, query injections, and double extensions stripped', () {
+      // Strips query injection and fragments
+      expect(OfflineCacheService.safeId('trackId?param=1&evil=true#heading'), 'trackIdparam1eviltrueheading');
+      // Strips double extensions attempting executable smuggling
+      expect(OfflineCacheService.safeId('audio.mp3.exe'), 'audiomp3exe');
+      expect(OfflineCacheService.safeId('payload.sh'), 'payloadsh');
+      // Strips special punctuation and whitespace
+      expect(OfflineCacheService.safeId('track with spaces'), 'trackwithspaces');
+    });
   });
 }
