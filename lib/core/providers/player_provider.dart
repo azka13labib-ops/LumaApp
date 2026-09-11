@@ -412,14 +412,22 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       final quality =
           _ref?.read(settingsProvider).audioQuality ?? AudioQuality.auto;
-      final realSource = await _yt.getAudioSource(item, quality: quality);
+      AudioSource? realSource;
 
-      if (!mounted || myId != _loadId) return;
-
-      if (realSource == null) throw Exception('Tidak dapat memuat audio');
-
-      // Set real audio source directly without remote dummy dependencies
-      await _player.setAudioSource(realSource);
+      try {
+        realSource = await _yt.getAudioSource(item, quality: quality);
+        if (realSource == null) throw Exception('Stream utama tidak tersedia');
+        await _player.setAudioSource(realSource);
+      } catch (primaryErr) {
+        debugPrint('[Player] Primary audio source failed ($primaryErr), trying RapidAPI fallback...');
+        if (!mounted || myId != _loadId) return;
+        state = state.copyWith(loadingStatus: 'Mencoba server cadangan…');
+        realSource = await _yt.getAudioSource(item, quality: quality, forceRapidApi: true);
+        if (realSource == null) {
+          throw Exception('Tidak dapat memuat audio dari server utama maupun cadangan: $primaryErr');
+        }
+        await _player.setAudioSource(realSource);
+      }
 
       if (!mounted || myId != _loadId) return;
 

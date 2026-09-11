@@ -8,8 +8,8 @@ import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
-import '../../../search/presentation/screens/search_screen.dart';
 import '../../../../features/player/presentation/widgets/track_row.dart';
+import '../../../../core/widgets/luma_list_skeleton.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -20,18 +20,66 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _supabase = Supabase.instance.client;
+  final _ytService = YouTubeService();
+
   List<MusicItem> _recentlyPlayed = [];
   List<MusicItem> _likedSongs = [];
   List<String> _artists = [];
   List<MusicItem> _cachedTracks = [];
+  List<MusicItem> _recommendedSongs = [];
+
   bool _loading = true;
+  bool _recommendedLoading = false;
   bool _isOffline = false;
   String? _error;
+
+  String _selectedGenre = 'Populer';
+  final List<String> _genres = const [
+    'Populer',
+    'Pop Indo',
+    'Hits',
+    'Santai',
+    'Galau',
+    'Lofi',
+  ];
 
   @override
   void initState() {
     super.initState();
     _fetchData();
+  }
+
+  @override
+  void dispose() {
+    _ytService.dispose();
+    super.dispose();
+  }
+
+  String _genreQuery(String genre) {
+    return switch (genre) {
+      'Pop Indo' => 'Pop Indonesia',
+      'Hits' => 'Top Hits Indonesia',
+      'Santai' => 'Akustik Santai Indonesia',
+      'Galau' => 'Lagu Galau Indonesia',
+      'Lofi' => 'Lofi Chill',
+      _ => 'Lagu Populer Indonesia',
+    };
+  }
+
+  Future<void> _fetchRecommended(String genre) async {
+    setState(() => _recommendedLoading = true);
+    try {
+      final items = await _ytService.searchMusic(_genreQuery(genre));
+      if (mounted) {
+        setState(() {
+          _recommendedSongs = items;
+          _recommendedLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('fetchRecommended error: $e');
+      if (mounted) setState(() => _recommendedLoading = false);
+    }
   }
 
   Future<void> _fetchData() async {
@@ -55,12 +103,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           .order('liked_at', ascending: false)
           .limit(8);
       final cachedFuture = OfflineCacheService.instance.listCached();
+      final recommendedFuture = _ytService.searchMusic(_genreQuery(_selectedGenre));
 
-      final results = await Future.wait<dynamic>([recentFuture, likedFuture, cachedFuture]);
+      final results = await Future.wait<dynamic>([
+        recentFuture,
+        likedFuture,
+        cachedFuture,
+        recommendedFuture,
+      ]);
 
       final recentRes = results[0] as List;
       final likedRes = results[1] as List;
       final cached = results[2] as List<MusicItem>;
+      final recommended = results[3] as List<MusicItem>;
 
       if (mounted) {
         final recent = recentRes
@@ -72,7 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         final seen = <String>{};
         final artists = <String>[];
-        for (final t in [...recent, ...liked]) {
+        for (final t in [...recent, ...liked, ...recommended]) {
           final name = t.author.trim();
           if (name.isEmpty) continue;
           final key = name.toLowerCase();
@@ -86,6 +141,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _likedSongs = liked;
           _artists = artists;
           _cachedTracks = cached;
+          _recommendedSongs = recommended;
           _loading = false;
           _error = null;
         });
@@ -177,7 +233,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            // Genre Filter Chips (only when online)
+            if (!_isOffline)
+              SizedBox(
+                height: 44,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  itemCount: _genres.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final g = _genres[i];
+                    final isSelected = g == _selectedGenre;
+                    return ChoiceChip(
+                      label: Text(g),
+                      selected: isSelected,
+                      selectedColor: LumaColors.accent,
+                      backgroundColor: LumaColors.darkSurface,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.black : Colors.white,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                      side: BorderSide(
+                        color: isSelected ? LumaColors.accent : Colors.white12,
+                      ),
+                      onSelected: (val) {
+                        if (val && _selectedGenre != g) {
+                          setState(() => _selectedGenre = g);
+                          _fetchRecommended(g);
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 8),
             // Body
             Expanded(child: _buildBody()),
           ],
@@ -189,7 +280,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildBody() {
     if (_loading) return _HomeSkeleton();
 
-    if (_error != null && _cachedTracks.isEmpty && _recentlyPlayed.isEmpty && _likedSongs.isEmpty) {
+    if (_error != null && _cachedTracks.isEmpty && _recentlyPlayed.isEmpty && _likedSongs.isEmpty && _recommendedSongs.isEmpty) {
       return Center(child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -249,67 +340,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
             ] else ...[
               // ONLINE MODE
-              if (_recentlyPlayed.isEmpty && _likedSongs.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: const BoxDecoration(
-                          color: LumaColors.darkSurface,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.music_note_rounded, color: LumaColors.accent, size: 48),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Selamat Datang di Luma',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Mulai dengarkan lagu favoritmu untuk mengisi beranda dengan riwayat dan rekomendasi.',
-                        style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14, height: 1.4),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          ActionChip(
-                            backgroundColor: LumaColors.darkSurface,
-                            side: const BorderSide(color: Colors.white12),
-                            label: const Text('Pop Indonesia', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
-                          ),
-                          ActionChip(
-                            backgroundColor: LumaColors.darkSurface,
-                            side: const BorderSide(color: Colors.white12),
-                            label: const Text('Top Hits Global', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
-                          ),
-                          ActionChip(
-                            backgroundColor: LumaColors.darkSurface,
-                            side: const BorderSide(color: Colors.white12),
-                            label: const Text('Lofi Chill', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
-                          ),
-                          ActionChip(
-                            backgroundColor: LumaColors.darkSurface,
-                            side: const BorderSide(color: Colors.white12),
-                            label: const Text('Acoustic Relax', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
               if (_recentlyPlayed.isNotEmpty) ...[
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
@@ -318,96 +348,161 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
-                height: 168,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _recentlyPlayed.length,
-                  itemBuilder: (context, i) => _HorizontalCard(_recentlyPlayed[i], onTap: () {
-                    ref.read(playerProvider.notifier).play(_recentlyPlayed, i);
-                  }),
+                  height: 168,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _recentlyPlayed.length,
+                    itemBuilder: (context, i) => _HorizontalCard(_recentlyPlayed[i], onTap: () {
+                      ref.read(playerProvider.notifier).play(_recentlyPlayed, i);
+                    }),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 20),
+              ],
 
-            if (_likedSongs.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Text('Lagu Disukai',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
-              ),
-              SizedBox(
-                height: 168,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _likedSongs.length,
-                  itemBuilder: (context, i) => _HorizontalCard(_likedSongs[i], onTap: () {
-                    ref.read(playerProvider.notifier).play(_likedSongs, i);
-                  }),
+              if (_likedSongs.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text('Lagu Disukai',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                SizedBox(
+                  height: 168,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _likedSongs.length,
+                    itemBuilder: (context, i) => _HorizontalCard(_likedSongs[i], onTap: () {
+                      ref.read(playerProvider.notifier).play(_likedSongs, i);
+                    }),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
-            if (_artists.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Text('Artis untukmu',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
-              ),
-              SizedBox(
-                height: 128,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _artists.length,
-                  itemBuilder: (context, i) {
-                    final name = _artists[i];
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ArtistScreen(artistName: name)),
-                      ),
-                      child: Container(
-                        width: 96,
-                        margin: const EdgeInsets.only(right: 14),
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: LumaColors.darkSurface,
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w700,
+              if (_artists.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text('Artis untukmu',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+                ),
+                SizedBox(
+                  height: 128,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _artists.length,
+                    itemBuilder: (context, i) {
+                      final name = _artists[i];
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => ArtistScreen(artistName: name)),
+                        ),
+                        child: Container(
+                          width: 96,
+                          margin: const EdgeInsets.only(right: 14),
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundColor: LumaColors.darkSurface,
+                                child: Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              name,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                              const SizedBox(height: 8),
+                              Text(
+                                name,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // REKOMENDASI POPULER / PILIHAN (ALWAYS VISIBLE)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Lagu $_selectedGenre',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    if (_recommendedLoading)
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: LumaColors.accent,
                         ),
                       ),
-                    );
-                  },
+                  ],
                 ),
               ),
-              ],
+
+              if (_recommendedLoading && _recommendedSongs.isEmpty)
+                const LumaListSkeleton(count: 6)
+              else if (_recommendedSongs.isNotEmpty)
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _recommendedSongs.length,
+                  itemBuilder: (context, i) {
+                    final item = _recommendedSongs[i];
+                    return TrackRow(
+                      item: item,
+                      onTap: () => ref.read(playerProvider.notifier).play(_recommendedSongs, i),
+                      showDownload: true,
+                    );
+                  },
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Belum ada lagu untuk kategori ini',
+                          style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: () => _fetchRecommended(_selectedGenre),
+                          child: const Text('Muat Ulang', style: TextStyle(color: LumaColors.accent)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ],
         ),

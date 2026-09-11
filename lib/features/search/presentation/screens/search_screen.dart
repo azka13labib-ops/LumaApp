@@ -149,15 +149,65 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     if (!_searched) {
-      return const Center(child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.search_rounded, color: Colors.white12, size: 56),
-          SizedBox(height: 16),
-          Text('Ketik nama lagu atau artis\ndi kotak pencarian',
-            style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14), textAlign: TextAlign.center),
-        ],
-      ));
+      const suggestions = [
+        'Bernadya',
+        'Tulus',
+        'Mahalini',
+        'Juicy Luicy',
+        'Pop Indonesia',
+        'Nadin Amizah',
+        'Lofi Chill',
+        'Top Hits',
+      ];
+
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pencarian Populer',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: suggestions.map((s) {
+                return ActionChip(
+                  backgroundColor: LumaColors.darkSurface,
+                  side: const BorderSide(color: Colors.white12),
+                  label: Text(s, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                  onPressed: () {
+                    _controller.text = s;
+                    _search(s);
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 36),
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.search_rounded, color: Colors.white12, size: 48),
+                  SizedBox(height: 12),
+                  Text(
+                    'Ketik lagu, artis, atau album\nuntuk mulai mencari',
+                    style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_results.isEmpty) {
