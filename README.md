@@ -13,26 +13,42 @@ High-performance, minimalist music streaming and offline audio player built with
 
 ---
 
-## Direct Installation
+## Installation
 
-### Option 1: One-Click APK Download (Recommended)
+### Method 1: Direct APK Download (Recommended)
 
-1. Click the download button above or [Download app-release.apk directly](https://github.com/azka13labib-ops/LumaApp/releases/latest/download/app-release.apk).
-2. Open the downloaded `.apk` file on your Android device.
-3. If prompted, allow installation from your browser or file manager.
-4. Tap Install.
+1. Click [Download app-release.apk](https://github.com/azka13labib-ops/LumaApp/releases/latest/download/app-release.apk).
+2. Open the downloaded `.apk` package on your Android device.
+3. If prompted by Android, grant permission to "Install Unknown Apps" for your browser or file manager.
+4. Press Install and launch the application.
 
-### Option 2: ADB Command Line Install
+### Method 2: ADB Installation
 
-Connect your Android device with USB debugging enabled, then execute:
+For developers or advanced users with USB debugging enabled:
 
 ```bash
-# Download latest APK
+# Download latest release package
 curl -L -o app-release.apk https://github.com/azka13labib-ops/LumaApp/releases/latest/download/app-release.apk
 
-# Install to connected device
+# Install directly to target device
 adb install -r app-release.apk
 ```
+
+---
+
+## Device Requirements & Permissions
+
+| Requirement | Minimum Specification |
+| :--- | :--- |
+| **Operating System** | Android 7.0 (API Level 24) or later |
+| **Storage Space** | 45 MB base install + offline cache headroom |
+| **Internet Connection** | Wi-Fi or Mobile Data (for streaming and cloud sync) |
+
+### Runtime Permissions
+
+- **Foreground Service**: Allows uninterrupted audio playback while screen is locked or app is in background.
+- **Post Notifications**: Renders playback controls and track metadata in the Android media notification shade.
+- **Internet Access**: Fetches remote audio streams, metadata, and Supabase user library data.
 
 ---
 
@@ -59,77 +75,6 @@ adb install -r app-release.apk
 | **Stream Extraction** | Youtube Explode Dart & Dio | Audio stream resolution and concurrent file download manager |
 | **Backend & Auth** | Supabase Flutter | User authentication, PostgreSQL database, and remote state sync |
 | **UI Design System** | Custom Dark Theme + Skeletonizer | OLED-optimized palette with zero layout-shift skeleton loaders |
-
----
-
-## Architecture Overview
-
-```
-lib/
-|-- core/
-|   |-- constants/          # Application routes, theme tokens, and color palettes
-|   |-- services/           # Audio background service, stream resolvers, downloader
-|   |-- theme/              # Dark mode styling and typography definitions
-|   |-- utils/              # Debouncers, formatters, and platform helpers
-|   `-- widgets/            # Shared primitives (LumaListSkeleton, MiniPlayer, etc.)
-|-- features/
-|   |-- auth/               # Authentication workflows and Supabase auth controllers
-|   |-- home/               # Dashboard, recent tracks, and quick discovery feeds
-|   |-- library/            # User playlists, liked songs, and downloaded storage
-|   |-- player/             # Fullscreen audio visualizer, queue manager, and controls
-|   |-- premium/            # Account tier settings and configuration
-|   `-- search/             # Query parsing, search results, and stream resolution
-`-- main.dart               # Service container initialization and root application entry
-```
-
----
-
-## Local Development & Build
-
-### Prerequisites
-
-- Flutter SDK version 3.2.0 or higher
-- Android SDK version 34 (Android 14) with Command Line Tools
-- Java Development Kit (JDK 17)
-
-### Setup Instructions
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/azka13labib-ops/LumaApp.git
-   cd LumaApp
-   ```
-
-2. Install Dart dependencies:
-   ```bash
-   flutter pub get
-   ```
-
-3. Configure Environment Variables:
-   Create a `.env` file in the root directory:
-   ```env
-   SUPABASE_URL=your_supabase_project_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-4. Launch the application on a connected device or emulator:
-   ```bash
-   flutter run
-   ```
-
-### Production Build
-
-To compile a signed or release Android package:
-
-```bash
-# Build universal release APK
-flutter build apk --release
-
-# Build split-per-ABI APKs (smaller file sizes)
-flutter build apk --release --split-per-abi
-```
-
-The output file will be generated at `build/app/outputs/flutter-apk/app-release.apk`.
 
 ---
 
