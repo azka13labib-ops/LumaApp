@@ -1,83 +1,82 @@
 # Luma
 
-High-performance, minimalist music streaming and offline audio player built with Flutter, Riverpod, Just Audio, and Supabase.
+Aplikasi streaming musik dan pemutar audio offline berkinerja tinggi, minimalis, dan hemat daya yang dibangun menggunakan Flutter, Riverpod, Just Audio, dan Supabase.
 
-[![Download APK](https://img.shields.io/badge/Download_APK-Direct_Install-10B981?style=for-the-badge&logo=android&logoColor=white)](https://github.com/azka13labib-ops/LumaApp/releases/latest/download/app-release.apk)
-[![Latest Release](https://img.shields.io/github/v/release/azka13labib-ops/LumaApp?style=for-the-badge&color=2563EB)](https://github.com/azka13labib-ops/LumaApp/releases/latest)
+[![Unduh APK](https://img.shields.io/badge/Unduh_APK-Instal_Langsung-10B981?style=for-the-badge&logo=android&logoColor=white)](https://github.com/azka13labib-ops/LumaApp/releases/latest/download/app-release.apk)
+[![Rilis Terbaru](https://img.shields.io/github/v/release/azka13labib-ops/LumaApp?style=for-the-badge&color=2563EB)](https://github.com/azka13labib-ops/LumaApp/releases/latest)
 
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![Flutter](https://img.shields.io/badge/Flutter-3.2.0+-blue.svg)](https://flutter.dev)
 [![State Management](https://img.shields.io/badge/State-Riverpod-blueviolet.svg)](https://riverpod.dev)
 [![Backend](https://img.shields.io/badge/Backend-Supabase-emerald.svg)](https://supabase.com)
-[![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
+[![Lisensi](https://img.shields.io/badge/Lisensi-MIT-lightgrey.svg)](LICENSE)
 
 ---
 
-## Installation
+## Panduan Instalasi
 
-### Method 1: Direct APK Download (Recommended)
+### Metode 1: Unduh dan Pasang Langsung APK (Disarankan)
 
-1. Click [Download app-release.apk](https://github.com/azka13labib-ops/LumaApp/releases/latest/download/app-release.apk).
-2. Open the downloaded `.apk` package on your Android device.
-3. If prompted by Android, grant permission to "Install Unknown Apps" for your browser or file manager.
-4. Press Install and launch the application.
+1. Klik tombol di atas atau [Unduh app-release.apk](https://github.com/azka13labib-ops/LumaApp/releases/latest/download/app-release.apk).
+2. Buka berkas `.apk` yang telah diunduh di perangkat Android Anda.
+3. Apabila muncul peringatan keamanan sistem Android, pilih opsi untuk mengizinkan instalasi dari sumber ini (browser atau pengelola berkas).
+4. Tekan tombol Pasang (Install), lalu buka aplikasi Luma.
 
-### Method 2: ADB Installation
+### Metode 2: Instalasi Melalui ADB
 
-For developers or advanced users with USB debugging enabled:
+Bagi pengguna yang menghubungkan perangkat via kabel dengan mode USB Debugging aktif:
 
 ```bash
-# Download latest release package
+# Unduh berkas APK rilis terbaru
 curl -L -o app-release.apk https://github.com/azka13labib-ops/LumaApp/releases/latest/download/app-release.apk
 
-# Install directly to target device
+# Pasang langsung ke perangkat Android
 adb install -r app-release.apk
 ```
 
 ---
 
-## Device Requirements & Permissions
+## Kebutuhan Perangkat dan Izin Akses
 
-| Requirement | Minimum Specification |
+| Komponen | Spesifikasi Minimum |
 | :--- | :--- |
-| **Operating System** | Android 7.0 (API Level 24) or later |
-| **Storage Space** | 45 MB base install + offline cache headroom |
-| **Internet Connection** | Wi-Fi or Mobile Data (for streaming and cloud sync) |
+| **Sistem Operasi** | Android 7.0 (API Level 24) atau yang lebih baru |
+| **Penyimpanan Bebas** | Minimal 45 MB untuk instalasi dasar ditambah ruang lagu offline |
+| **Koneksi Jaringan** | Wi-Fi atau Paket Data Seluler (untuk streaming audio dan sinkronisasi data) |
 
-### Runtime Permissions
+### Izin Sistem yang Diperlukan
 
-- **Foreground Service**: Allows uninterrupted audio playback while screen is locked or app is in background.
-- **Post Notifications**: Renders playback controls and track metadata in the Android media notification shade.
-- **Internet Access**: Fetches remote audio streams, metadata, and Supabase user library data.
-
----
-
-## Core Capabilities
-
-- **Uninterrupted Background Playback**: Native media notification integration with lock-screen controls, seek bars, and next/previous track navigation powered by `just_audio` and `just_audio_background`.
-- **Zero-Interruption Streaming**: Optimized audio stream resolution with cancellation token handling to eliminate race conditions and audio stutter.
-- **Offline Storage and Downloads**: High-speed local track caching for offline listening without cellular or WiFi connectivity.
-- **Debounced Instant Search**: Real-time YouTube audio query indexing with debounced inputs to reduce API traffic and render instantaneous results.
-- **Synchronized Cloud Library**: Real-time persistence for favorites, playlists, and recently played tracks backed by Supabase PostgreSQL.
-- **Skeletonized State Transitions**: Native `Skeletonizer` placeholder architecture preventing layout shifts during content loading.
-- **Dynamic Palette Extraction**: Contextual UI background gradients computed in real time from album artwork using `palette_generator`.
-- **Pure Dark OLED Architecture**: High-contrast, minimal design system engineered to maximize battery longevity and eliminate interface clutter.
+- **Layanan Latar Belakang (Foreground Service)**: Memungkinkan pemutaran lagu tetap berjalan tanpa terhenti saat layar mati atau saat membuka aplikasi lain.
+- **Notifikasi**: Menampilkan kontrol lagu (play, pause, next, previous) dan judul lagu pada bilah notifikasi sistem Android.
+- **Akses Internet**: Digunakan untuk mengambil streaming audio, metadata pencarian lagu, dan sinkronisasi akun Supabase.
 
 ---
 
-## Tech Stack
+## Fitur Utama
 
-| Layer | Component | Description |
+- **Pemutaran Latar Belakang Tanpa Hambatan**: Terintegrasi penuh dengan sistem notifikasi dan layar kunci Android menggunakan `just_audio` dan `just_audio_background`.
+- **Mode Offline dan Unduh Lagu**: Simpan lagu favorit ke memori internal perangkat untuk didengarkan kapan saja tanpa kuota internet.
+- **Pencarian Cepat Responsif**: Menemukan audio dan lagu secara instan dengan sistem debounce cerdas untuk efisiensi jaringan.
+- **Sinkronisasi Koleksi Cloud**: Daftar lagu favorit, riwayat lagu yang baru diputar, dan playlist tersimpan secara otomatis di cloud melalui Supabase.
+- **Transisi Tampilan Halus**: Penggunaan skeleton loading bawaan (Skeletonizer) yang memuat kerangka data tanpa pergeseran tata letak antarmuka.
+- **Ekstraksi Warna Sampul Dinamis**: Latar belakang tampilan pemutar menyesuaikan gradasi warna secara otomatis mengikuti gambar sampul album menggunakan `palette_generator`.
+- **Tema Gelap OLED Murni**: Antarmuka hitam pekat berprinsip minimalis, nyaman di mata, dan hemat konsumsi baterai perangkat.
+
+---
+
+## Teknologi yang Digunakan
+
+| Lapisan | Komponen | Peran |
 | :--- | :--- | :--- |
-| **Framework** | Flutter (Dart SDK >=3.2.0) | Cross-platform native mobile foundation |
-| **State Management** | Flutter Riverpod | Reactive, compile-safe dependency injection and state |
-| **Audio Engine** | Just Audio & Just Audio Background | Native Android foreground media service and ExoPlayer bindings |
-| **Stream Extraction** | Youtube Explode Dart & Dio | Audio stream resolution and concurrent file download manager |
-| **Backend & Auth** | Supabase Flutter | User authentication, PostgreSQL database, and remote state sync |
-| **UI Design System** | Custom Dark Theme + Skeletonizer | OLED-optimized palette with zero layout-shift skeleton loaders |
+| **Framework** | Flutter (Dart SDK >=3.2.0) | Fondasi aplikasi mobile lintas platform |
+| **Manajemen State** | Flutter Riverpod | Pengelolaan status reaktif dan dependency injection |
+| **Mesin Audio** | Just Audio & Just Audio Background | Pemutaran audio native di tingkat sistem Android |
+| **Penyedia Sumber Audio** | Youtube Explode Dart & Dio | Resolusi tautan audio dan pengunduh berkas |
+| **Backend & Autentikasi** | Supabase Flutter | Basis data cloud PostgreSQL, riwayat, dan akun pengguna |
+| **Antarmuka (UI/UX)** | Tema Gelap Kustom & Skeletonizer | Desain modern berkecepatan tinggi tanpa layout-shift |
 
 ---
 
-## License
+## Lisensi
 
-This project is licensed under the MIT License. Refer to the [LICENSE](LICENSE) file for full details.
+Proyek ini didistribusikan di bawah lisensi MIT. Silakan lihat berkas [LICENSE](LICENSE) untuk informasi lebih lanjut.
