@@ -51,8 +51,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+    final surfaceColor = theme.colorScheme.surface;
+
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,13 +67,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Cari', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+                  Text('Cari', style: TextStyle(color: textPrimary, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _controller,
                     focusNode: _focusNode,
                     autofocus: false,
-                    style: const TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: textPrimary, fontSize: 15),
                     textInputAction: TextInputAction.search,
                     onSubmitted: _search,
                     onChanged: (v) {
@@ -84,8 +89,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     },
                     decoration: InputDecoration(
                       hintText: 'Lagu, artis, atau album',
-                      hintStyle: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 15),
-                      prefixIcon: const Icon(Icons.search_rounded, color: LumaColors.darkTextSecondary),
+                      hintStyle: TextStyle(color: textSecondary, fontSize: 15),
+                      prefixIcon: Icon(Icons.search_rounded, color: textSecondary),
                       suffixIcon: (_loading || _isDebouncing)
                           ? const Padding(
                               padding: EdgeInsets.all(12),
@@ -97,7 +102,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             )
                           : _controller.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.close_rounded, color: LumaColors.darkTextSecondary),
+                                  icon: Icon(Icons.close_rounded, color: textSecondary),
                                   onPressed: () {
                                     _controller.clear();
                                     setState(() {
@@ -108,7 +113,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     });
                                   })
                               : null,
-                      filled: true, fillColor: LumaColors.darkSurface,
+                      filled: true, fillColor: surfaceColor,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -129,6 +134,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     if (_loading) return const LumaListSkeleton(count: 8);
 
     if (_error != null) {
@@ -139,7 +148,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           children: [
             const Icon(Icons.wifi_off_rounded, color: Colors.white24, size: 48),
             const SizedBox(height: 16),
-            Text(_error!, style: const TextStyle(color: Colors.white70, fontSize: 15), textAlign: TextAlign.center),
+            Text(_error!, style: TextStyle(color: textPrimary, fontSize: 15), textAlign: TextAlign.center),
             const SizedBox(height: 16),
             TextButton(onPressed: () => _search(_controller.text),
               child: const Text('Coba lagi', style: TextStyle(color: LumaColors.accent))),
@@ -165,10 +174,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Pencarian Populer',
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.2,
@@ -180,9 +189,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               runSpacing: 8,
               children: suggestions.map((s) {
                 return ActionChip(
-                  backgroundColor: LumaColors.darkSurface,
-                  side: const BorderSide(color: Colors.white12),
-                  label: Text(s, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                  backgroundColor: theme.colorScheme.surface,
+                  side: BorderSide(color: theme.dividerColor),
+                  label: Text(s, style: TextStyle(color: textPrimary, fontSize: 13)),
                   onPressed: () {
                     _controller.text = s;
                     _search(s);
@@ -191,15 +200,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               }).toList(),
             ),
             const SizedBox(height: 36),
-            const Center(
+            Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.search_rounded, color: Colors.white12, size: 48),
-                  SizedBox(height: 12),
+                  Icon(Icons.search_rounded, color: theme.dividerColor, size: 48),
+                  const SizedBox(height: 12),
                   Text(
                     'Ketik lagu, artis, atau album\nuntuk mulai mencari',
-                    style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
+                    style: TextStyle(color: textSecondary, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -214,12 +223,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return Center(child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.music_off_rounded, color: Colors.white12, size: 56),
+          Icon(Icons.music_off_rounded, color: theme.dividerColor, size: 56),
           const SizedBox(height: 16),
           Text('"${_controller.text}" tidak ditemukan',
-            style: const TextStyle(color: Colors.white70, fontSize: 15), textAlign: TextAlign.center),
+            style: TextStyle(color: textPrimary, fontSize: 15), textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          const Text('Coba kata kunci lain', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13)),
+          Text('Coba kata kunci lain', style: TextStyle(color: textSecondary, fontSize: 13)),
         ],
       ));
     }
