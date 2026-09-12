@@ -1,10 +1,11 @@
 import 'package:universal_io/io.dart' show Platform;
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../widgets/luma_emblem.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -14,43 +15,70 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProviderStateMixin {
   final _emailCtrl = TextEditingController();
   final _passCtrl  = TextEditingController();
+  final _emailFocusNode = FocusNode();
+  final _passFocusNode = FocusNode();
+  
   bool _isLoading  = false;
   bool _obscure    = true;
   String? _error;
+
+  late AnimationController _animController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _animController.forward();
+  }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _emailFocusNode.dispose();
+    _passFocusNode.dispose();
+    _animController.dispose();
     super.dispose();
   }
 
   Future<void> _login() async {
+    HapticFeedback.lightImpact();
+    FocusScope.of(context).unfocus();
+    
     final email = _emailCtrl.text.trim().toLowerCase();
     final pass  = _passCtrl.text;
     if (email.isEmpty || pass.isEmpty) {
       setState(() => _error = 'Email dan password wajib diisi.');
+      HapticFeedback.heavyImpact();
       return;
     }
     final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$');
     if (!emailRegex.hasMatch(email)) {
       setState(() => _error = 'Format email tidak valid.');
+      HapticFeedback.heavyImpact();
       return;
     }
     if (pass.length > 128) {
       setState(() => _error = 'Password terlalu panjang (maksimal 128 karakter).');
+      HapticFeedback.heavyImpact();
       return;
     }
+    
     setState(() { _isLoading = true; _error = null; });
     try {
       await Supabase.instance.client.auth.signInWithPassword(email: email, password: pass);
     } on AuthException catch (e) {
       setState(() => _error = _translateAuthError(e.message));
+      HapticFeedback.heavyImpact();
     } catch (_) {
       setState(() => _error = 'Terjadi kesalahan koneksi. Coba lagi.');
+      HapticFeedback.heavyImpact();
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -74,6 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _forgotPassword() async {
+    HapticFeedback.lightImpact();
     final email = _emailCtrl.text.trim();
     if (email.isEmpty) {
       setState(() => _error = 'Masukkan email dulu untuk reset password.');
@@ -91,13 +120,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  // ── Social Login via Supabase OAuth (Custom Tab) ─────────────────────────
-  // Uses Supabase's built-in OAuth flow which opens a browser/Custom Tab.
-  // No native SDK required — works on Android and iOS out of the box.
-  // The deep link io.supabase.lumaapp://login-callback/ in AndroidManifest
-  // returns the user back to the app after successful authentication.
-
   Future<void> _signInWithOAuth(OAuthProvider provider) async {
+    HapticFeedback.lightImpact();
     setState(() { _isLoading = true; _error = null; });
     try {
       await Supabase.instance.client.auth.signInWithOAuth(
@@ -105,18 +129,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         redirectTo: 'io.supabase.lumaapp://login-callback/',
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
-      // The auth state change in main.dart handles navigation automatically.
-      // We set _isLoading to false after a short delay since the OAuth flow
-      // moves to an external browser/Custom Tab.
       await Future.delayed(const Duration(seconds: 2));
     } on AuthException catch (e) {
       if (mounted) setState(() => _error = _translateAuthError(e.message));
+      HapticFeedback.heavyImpact();
     } catch (e) {
       debugPrint('[Auth] OAuth error ($provider): $e');
       if (mounted) {
         setState(() => _error =
           'Gagal masuk dengan ${_providerName(provider)}. '
           'Pastikan provider sudah diaktifkan di Supabase Dashboard.');
+        HapticFeedback.heavyImpact();
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -132,393 +155,552 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Widget _buildStaggeredItem({required int index, required Widget child}) {
+    // Menghitung interval animasi untuk setiap index
+    // Mengurangi interval agar index yang besar tidak melebihi 1.0
+    final start = (index * 0.04).clamp(0.0, 0.9);
+    final end = (start + 0.3).clamp(0.0, 1.0);
+    
+    final fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Interval(start.toDouble(), end.toDouble(), curve: Curves.easeOutCubic),
+      ),
+    );
+    
+    final slideAnim = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Interval(start.toDouble(), end.toDouble(), curve: Curves.easeOutCubic),
+      ),
+    );
+
+    return FadeTransition(
+      opacity: fadeAnim,
+      child: SlideTransition(
+        position: slideAnim,
+        child: child,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final showApple = !kIsWeb && Platform.isIOS;
-    // Paksakan menggunakan tema terang
     final forcedTheme = AppTheme.light;
     
-    final bgColor = forcedTheme.scaffoldBackgroundColor;
-    final surfaceColor = forcedTheme.colorScheme.surface;
-    final textPrimary = forcedTheme.textTheme.headlineMedium?.color ?? Colors.black;
-    final textSecondary = forcedTheme.textTheme.bodyMedium?.color ?? Colors.grey;
-    final dividerColor = forcedTheme.dividerColor;
+    const bgColor = Color(0xFFFFFFFF);
+    const textPrimary = Color(0xFF111111);
+    const textSecondary = Color(0xFF6B7280);
+    const dividerColor = Color(0xFFE5E7EB);
+    const primaryBlue = Color(0xFF1C4ED8);
+    const primaryBlueLight = Color(0xFF3B82F6);
+    
+    final items = <Widget>[
+      // Error Message
+      if (_error != null) ...[
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF2F2),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFECACA), width: 1),
+          ),
+          child: Row(children: [
+            const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(_error!, style: const TextStyle(
+              color: Color(0xFF991B1B), fontSize: 14, fontWeight: FontWeight.w500,
+            ))),
+          ]),
+        ),
+      ],
+
+      // Email Label & Field
+      const Text('Email / Username', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      _PillTextField(
+        controller: _emailCtrl,
+        focusNode: _emailFocusNode,
+        hintText: 'name@example.com',
+        keyboardType: TextInputType.emailAddress,
+        autofillHints: const [AutofillHints.email],
+      ),
+      const SizedBox(height: 24),
+
+      // Password Label & Field
+      const Text('Password', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      _PillTextField(
+        controller: _passCtrl,
+        focusNode: _passFocusNode,
+        hintText: '••••••••',
+        obscureText: _obscure,
+        onToggleObscure: () {
+          HapticFeedback.selectionClick();
+          setState(() => _obscure = !_obscure);
+        },
+      ),
+      const SizedBox(height: 32),
+
+      // Sign In Button
+      _AnimatedGradientButton(
+        onPressed: _isLoading ? null : _login,
+        colors: const [primaryBlueLight, primaryBlue],
+        textColor: Colors.white,
+        child: _isLoading
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+            : const Text('Sign In', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.2)),
+      ),
+      const SizedBox(height: 16),
+
+      // Forgot password
+      Center(
+        child: InkWell(
+          onTap: _forgotPassword,
+          borderRadius: BorderRadius.circular(20),
+          splashColor: Colors.transparent,
+          highlightColor: primaryBlue.withValues(alpha: 0.1),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Text('Forgot Password?', style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w600, color: primaryBlue,
+            )),
+          ),
+        ),
+      ),
+      const SizedBox(height: 24),
+
+      // Divider "Or"
+      Row(children: [
+        Expanded(child: Container(height: 1, color: dividerColor)),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text('Or', style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+        ),
+        Expanded(child: Container(height: 1, color: dividerColor)),
+      ]),
+      const SizedBox(height: 24),
+
+      // Google Button
+      _SocialLoginButton(
+        onPressed: _isLoading ? null : () => _signInWithOAuth(OAuthProvider.google),
+        icon: Image.network(
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png',
+          width: 20, height: 20,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 24, color: Colors.black),
+        ),
+        label: 'Continue with Google',
+      ),
+      const SizedBox(height: 12),
+
+      // Facebook Button
+      _SocialLoginButton(
+        onPressed: _isLoading ? null : () => _signInWithOAuth(OAuthProvider.facebook),
+        icon: const Icon(Icons.facebook_rounded, color: Color(0xFF1877F2), size: 22),
+        label: 'Continue with Facebook',
+      ),
+      const SizedBox(height: 12),
+
+      // Apple Button
+      if (showApple) ...[
+        _SocialLoginButton(
+          onPressed: _isLoading ? null : () => _signInWithOAuth(OAuthProvider.apple),
+          icon: const Icon(Icons.apple_rounded, color: Colors.black, size: 24),
+          label: 'Continue with Apple',
+        ),
+        const SizedBox(height: 12),
+      ],
+      
+      const SizedBox(height: 16),
+      
+      // Sign Up Link
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Text("Don't have an account?", style: TextStyle(color: textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+        const SizedBox(width: 4),
+        InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen()));
+          },
+          borderRadius: BorderRadius.circular(6),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            child: Text('Sign up', style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w600, color: primaryBlue
+            )),
+          ),
+        ),
+      ]),
+      
+      const SizedBox(height: 48),
+      
+      // Copyright
+      const Center(
+        child: Text('© 2026 Luma.Inc', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12, fontWeight: FontWeight.w500)),
+      ),
+    ];
 
     return Theme(
       data: forcedTheme,
       child: Scaffold(
         backgroundColor: bgColor,
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 600;
-            return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Illustration bleeding to top
-                    Container(
-                      height: constraints.maxHeight * 0.25, // Reduced slightly
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                      ),
-                      child: SafeArea(
-                        bottom: false,
-                        child: Center(
-                          child: Image.asset(
-                            'assets/images/login_illustration.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) => Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.image_not_supported_outlined, size: 48, color: dividerColor),
-                                const SizedBox(height: 8),
-                                Text('assets/images/login_illustration.png', 
-                                  style: TextStyle(color: textSecondary, fontSize: 12)
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    // Form Content
-                    Expanded(
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isWide ? constraints.maxWidth * 0.2 : 32.0,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const SizedBox(height: 8), // Reduced from 16
-                            // Title
-                            Text('Welcome back.', 
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                color: textPrimary, 
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800, 
-                                letterSpacing: -1.0,
-                                height: 1.1,
-                              )
-                            ),
-                            const SizedBox(height: 4),
-                            Text('Log in to continue listening.', 
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                color: textSecondary, 
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500, 
-                                letterSpacing: -0.3,
-                              )
-                            ),
-                            const SizedBox(height: 20), // Reduced from 24
-
-                            if (_error != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF0F0),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFFFD6D6)),
-                                ),
-                                child: Row(children: [
-                                  const Icon(Icons.error_outline_rounded, color: Color(0xFFE53E3E), size: 18),
-                                  const SizedBox(width: 10),
-                                  Expanded(child: Text(_error!, style: const TextStyle(
-                                    color: Color(0xFFC53030), fontSize: 13, fontWeight: FontWeight.w500,
-                                  ))),
-                                ]),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-
-                            // Email Field
-                            TextField(
-                              controller: _emailCtrl,
-                              keyboardType: TextInputType.emailAddress,
-                              autofillHints: const [AutofillHints.email],
-                              style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
-                              cursorColor: LumaColors.accent,
-                              decoration: InputDecoration(
-                                hintText: 'Email address',
-                                hintStyle: TextStyle(color: textSecondary, fontWeight: FontWeight.w400),
-                                filled: true, fillColor: surfaceColor,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black, width: 1.5)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Password Field
-                            TextField(
-                              controller: _passCtrl,
-                              obscureText: _obscure,
-                              style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
-                              cursorColor: LumaColors.accent,
-                              decoration: InputDecoration(
-                                hintText: 'Password',
-                                hintStyle: TextStyle(color: textSecondary, fontWeight: FontWeight.w400),
-                                filled: true, fillColor: surfaceColor,
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                    size: 20, color: textSecondary,
-                                  ),
-                                  onPressed: () => setState(() => _obscure = !_obscure),
-                                ),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black, width: 1.5)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-
-                            // Forgot password
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: InkWell(
-                                onTap: _forgotPassword,
-                                borderRadius: BorderRadius.circular(4),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4), // Reduced vertical
-                                  child: Text('Forgot password?', style: TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.w600, color: textSecondary,
-                                  )),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16), // Reduced from 20
-
-                            // Primary CTA
-                            SizedBox(
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: LumaColors.accent,
-                                  foregroundColor: Colors.black,
-                                  elevation: 0,
-                                  disabledBackgroundColor: LumaColors.accent.withValues(alpha: 0.3),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5))
-                                    : const Text('Log in', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: -0.2)),
-                              ),
-                            ),
-                            const SizedBox(height: 20), // Reduced from 24
-
-                            // ── Social Login Section ───────────────────────────────────────
-                            Row(children: [
-                              Expanded(child: Container(height: 1, color: dividerColor)),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  'or continue with',
-                                  style: TextStyle(
-                                    color: textSecondary,
-                                    fontSize: 12, fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              Expanded(child: Container(height: 1, color: dividerColor)),
-                            ]),
-                            const SizedBox(height: 16), // Reduced from 24
-
-                            // Social buttons row
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _SocialLoginButton(
-                                    onPressed: _isLoading ? null : () => _signInWithOAuth(OAuthProvider.google),
-                                    icon: const _GoogleIcon(),
-                                    label: 'Google',
-                                    backgroundColor: surfaceColor,
-                                    borderColor: Colors.transparent,
-                                    textColor: textPrimary,
-                                  ),
-                                ),
-                                if (showApple) ...[
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _SocialLoginButton(
-                                      onPressed: _isLoading ? null : () => _signInWithOAuth(OAuthProvider.apple),
-                                      icon: const Icon(Icons.apple_rounded, color: Colors.white, size: 20),
-                                      label: 'Apple',
-                                      backgroundColor: Colors.black,
-                                      borderColor: Colors.transparent,
-                                      textColor: Colors.white,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+              return Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: isWide ? 420 : double.infinity),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header (Logo, Back Button, & Version)
+                        _buildStaggeredItem(
+                          index: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Row(
+                                children: [
+                                  if (Navigator.canPop(context)) ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.arrow_back_rounded, color: textPrimary, size: 22),
+                                      onPressed: () => Navigator.pop(context),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      splashRadius: 20,
+                                    ),
+                                    const SizedBox(width: 14),
+                                  ],
+                                  Container(
+                                    width: 52,
+                                    height: 52,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF3F4F6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const LumaEmblem(
+                                      size: 30,
+                                      color: primaryBlue,
                                     ),
                                   ),
                                 ],
-                              ],
-                            ),
-
-                            const SizedBox(height: 8), // Reduced from 12
-                            // Guest
-                            _SocialLoginButton(
-                              onPressed: _isLoading ? null : () async {
-                                try {
-                                  setState(() { _isLoading = true; _error = null; });
-                                  await Supabase.instance.client.auth.signInAnonymously();
-                                } catch (e) {
-                                  if (mounted) setState(() => _error = 'Gagal masuk sebagai tamu. Pastikan Anonymous login aktif di Supabase.');
-                                } finally {
-                                  if (mounted) setState(() => _isLoading = false);
-                                }
-                              },
-                              icon: Icon(Icons.person_outline_rounded, color: textSecondary, size: 20),
-                              label: 'Continue as Guest',
-                              backgroundColor: Colors.transparent,
-                              borderColor: dividerColor,
-                              textColor: textSecondary,
-                            ),
-
-                            const Spacer(),
-                            const SizedBox(height: 8),
-
-                            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Text("Don't have an account?", style: TextStyle(color: textSecondary, fontSize: 13)),
-                              const SizedBox(width: 6),
-                              InkWell(
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Text('Sign up', style: TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary
-                                  )),
-                                ),
                               ),
-                            ]),
-                            const SizedBox(height: 12),
-                          ],
+                              const Text('2.45.6.34 Alpha', style: TextStyle(
+                                color: Color(0xFF9CA3AF), fontSize: 12, fontWeight: FontWeight.w500
+                              )),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 48),
+
+                        // Animated List
+                        ...List.generate(items.length, (index) {
+                          return _buildStaggeredItem(
+                            index: index + 1, // Offset by 1 for the header
+                            child: items[index],
+                          );
+                        }),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+// ── Pill-Shaped Text Field ──────────────────────────────────────────────────
+
+class _PillTextField extends StatefulWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hintText;
+  final bool obscureText;
+  final TextInputType keyboardType;
+  final Iterable<String>? autofillHints;
+  final VoidCallback? onToggleObscure;
+
+  const _PillTextField({
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    this.autofillHints,
+    this.onToggleObscure,
+  });
+
+  @override
+  State<_PillTextField> createState() => _PillTextFieldState();
+}
+
+class _PillTextFieldState extends State<_PillTextField> {
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _isFocused = widget.focusNode.hasFocus;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: _isFocused ? Colors.white : const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(30), // Pill shape
+        border: Border.all(
+          color: _isFocused ? const Color(0xFF1C4ED8) : Colors.transparent,
+          width: _isFocused ? 1.5 : 0.0,
+        ),
+        boxShadow: _isFocused ? [
+          BoxShadow(
+            color: const Color(0xFF1C4ED8).withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ] : [],
+      ),
+      child: TextField(
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        obscureText: widget.obscureText,
+        keyboardType: widget.keyboardType,
+        autofillHints: widget.autofillHints,
+        style: const TextStyle(color: Color(0xFF111111), fontSize: 15, fontWeight: FontWeight.w500),
+        cursorColor: const Color(0xFF1C4ED8),
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontWeight: FontWeight.w400, fontSize: 15),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          suffixIcon: widget.onToggleObscure != null
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: IconButton(
+                    icon: Icon(
+                      widget.obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 20,
+                      color: const Color(0xFF6B7280),
+                    ),
+                    onPressed: widget.onToggleObscure,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Animated Gradient Button (Scale Effect) ────────────────────────────────
+
+class _AnimatedGradientButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final Widget child;
+  final List<Color> colors;
+  final Color textColor;
+
+  const _AnimatedGradientButton({
+    required this.onPressed,
+    required this.child,
+    required this.colors,
+    required this.textColor,
+  });
+
+  @override
+  State<_AnimatedGradientButton> createState() => _AnimatedGradientButtonState();
+}
+
+class _AnimatedGradientButtonState extends State<_AnimatedGradientButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    if (widget.onPressed != null) {
+      _controller.forward();
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    if (widget.onPressed != null) {
+      _controller.reverse();
+      widget.onPressed!();
+    }
+  }
+
+  void _onTapCancel() {
+    if (widget.onPressed != null) _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDisabled = widget.onPressed == null;
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 52,
+          decoration: BoxDecoration(
+            gradient: isDisabled 
+                ? LinearGradient(colors: [Colors.grey.shade300, Colors.grey.shade400])
+                : LinearGradient(colors: widget.colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: !isDisabled ? [
+              BoxShadow(
+                color: widget.colors.last.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              )
+            ] : [],
+          ),
+          alignment: Alignment.center,
+          child: widget.child,
+        ),
+      ),
+    );
   }
 }
 
 // ── Reusable Social Button ─────────────────────────────────────────────────
 
-class _SocialLoginButton extends StatelessWidget {
+class _SocialLoginButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final Widget icon;
   final String label;
-  final Color backgroundColor;
-  final Color borderColor;
-  final Color textColor;
 
   const _SocialLoginButton({
     required this.onPressed,
     required this.icon,
     required this.label,
-    required this.backgroundColor,
-    required this.borderColor,
-    required this.textColor,
   });
 
   @override
+  State<_SocialLoginButton> createState() => _SocialLoginButtonState();
+}
+
+class _SocialLoginButtonState extends State<_SocialLoginButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    if (widget.onPressed != null) {
+      _controller.forward();
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    if (widget.onPressed != null) {
+      _controller.reverse();
+      widget.onPressed!();
+    }
+  }
+
+  void _onTapCancel() {
+    if (widget.onPressed != null) _controller.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          side: borderColor == Colors.transparent ? BorderSide.none : BorderSide(color: borderColor, width: 1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.2,
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9FAFB),
+            borderRadius: BorderRadius.circular(30), // Pill shape
+            border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              widget.icon,
+              const SizedBox(width: 12),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  color: Color(0xFF374151),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-// ── Google "G" Icon (drawn via CustomPaint, no assets needed) ─────────────
-
-class _GoogleIcon extends StatelessWidget {
-  const _GoogleIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: CustomPaint(painter: _GoogleLogoPainter()),
-    );
-  }
-}
-
-class _GoogleLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final c = Offset(size.width / 2, size.height / 2);
-    final r = size.width / 2;
-
-    // White background circle
-    canvas.drawCircle(c, r, Paint()..color = Colors.white);
-
-    final rect = Rect.fromCircle(center: c, radius: r * 0.72);
-    final sw = size.width * 0.19;
-
-    void arc(double start, double sweep, Color color) {
-      canvas.drawArc(rect, start, sweep, false,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = sw
-          ..strokeCap = StrokeCap.butt,
-      );
-    }
-
-    arc(-0.55, 1.25, const Color(0xFFEA4335)); // Red
-    arc( 0.70, 0.85, const Color(0xFFFBBC05)); // Yellow
-    arc( 1.55, 0.80, const Color(0xFF34A853)); // Green
-    arc( 2.35, 1.50, const Color(0xFF4285F4)); // Blue
-
-    // Horizontal bar of "G"
-    canvas.drawLine(
-      Offset(c.dx, c.dy - size.height * 0.01),
-      Offset(c.dx + r * 0.70, c.dy - size.height * 0.01),
-      Paint()
-        ..color = const Color(0xFF4285F4)
-        ..strokeWidth = size.height * 0.19
-        ..strokeCap = StrokeCap.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

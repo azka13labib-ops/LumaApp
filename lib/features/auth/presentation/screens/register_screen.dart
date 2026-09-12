@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -8,64 +9,106 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
+  final _nameCtrl  = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passCtrl  = TextEditingController();
   final _confirmCtrl = TextEditingController();
+  
+  final _nameFocusNode = FocusNode();
+  final _emailFocusNode = FocusNode();
+  final _passFocusNode = FocusNode();
+  final _confirmFocusNode = FocusNode();
+
   bool _isLoading  = false;
   bool _obscure    = true;
   bool _obscureConfirm = true;
   String? _error;
   bool _success = false;
+  bool _agreedToTerms = false;
+
+  late AnimationController _animController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _animController.forward();
+  }
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _confirmCtrl.dispose();
+    _nameFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _passFocusNode.dispose();
+    _confirmFocusNode.dispose();
+    _animController.dispose();
     super.dispose();
   }
 
   Future<void> _register() async {
+    HapticFeedback.lightImpact();
+    FocusScope.of(context).unfocus();
+
+    final name    = _nameCtrl.text.trim();
     final email   = _emailCtrl.text.trim().toLowerCase();
     final pass    = _passCtrl.text;
     final confirm = _confirmCtrl.text;
 
-    if (email.isEmpty || pass.isEmpty || confirm.isEmpty) {
+    if (name.isEmpty || email.isEmpty || pass.isEmpty || confirm.isEmpty) {
       setState(() => _error = 'Semua kolom wajib diisi.');
+      HapticFeedback.heavyImpact();
+      return;
+    }
+    if (!_agreedToTerms) {
+      setState(() => _error = 'Anda harus menyetujui Syarat & Ketentuan.');
+      HapticFeedback.heavyImpact();
       return;
     }
     final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$');
     if (!emailRegex.hasMatch(email)) {
       setState(() => _error = 'Format email tidak valid.');
+      HapticFeedback.heavyImpact();
       return;
     }
     if (pass != confirm) {
       setState(() => _error = 'Password dan konfirmasi tidak cocok.');
+      HapticFeedback.heavyImpact();
       return;
     }
     if (pass.length < 6) {
       setState(() => _error = 'Password minimal 6 karakter.');
-      return;
-    }
-    if (pass.length > 128) {
-      setState(() => _error = 'Password terlalu panjang (maksimal 128 karakter).');
+      HapticFeedback.heavyImpact();
       return;
     }
 
     setState(() { _isLoading = true; _error = null; });
 
     try {
-      await Supabase.instance.client.auth.signUp(email: email, password: pass);
+      await Supabase.instance.client.auth.signUp(
+        email: email, 
+        password: pass,
+        data: {'full_name': name},
+      );
       if (mounted) setState(() { _isLoading = false; _success = true; });
+      HapticFeedback.lightImpact();
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) Navigator.pop(context);
     } on AuthException catch (e) {
       setState(() => _error = _translateAuthError(e.message));
+      HapticFeedback.heavyImpact();
     } catch (_) {
       setState(() => _error = 'Terjadi kesalahan koneksi. Coba lagi.');
+      HapticFeedback.heavyImpact();
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && !_success) setState(() => _isLoading = false);
     }
   }
 
@@ -74,177 +117,420 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (lower.contains('already registered') || lower.contains('already exists')) {
       return 'Email ini sudah terdaftar. Silakan masuk.';
     }
-    if (lower.contains('password should be at least')) {
-      return 'Kata sandi minimal harus 6 karakter.';
-    }
-    if (lower.contains('invalid email')) {
-      return 'Format email tidak valid.';
-    }
     return 'Pendaftaran gagal: $msg';
+  }
+
+  Widget _buildStaggeredItem({required int index, required Widget child}) {
+    final start = (index * 0.04).clamp(0.0, 0.9);
+    final end = (start + 0.3).clamp(0.0, 1.0);
+    
+    final fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Interval(start.toDouble(), end.toDouble(), curve: Curves.easeOutCubic),
+      ),
+    );
+    
+    final slideAnim = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Interval(start.toDouble(), end.toDouble(), curve: Curves.easeOutCubic),
+      ),
+    );
+
+    return FadeTransition(
+      opacity: fadeAnim,
+      child: SlideTransition(
+        position: slideAnim,
+        child: child,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: LumaColors.darkBg,
-      appBar: AppBar(
-        backgroundColor: LumaColors.darkBg,
-        foregroundColor: LumaColors.darkTextPrimary,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+    const bgColor = Color(0xFFFFFFFF);
+    const textPrimary = Color(0xFF111111);
+    const primaryBlue = Color(0xFF1C4ED8);
+    const primaryBlueLight = Color(0xFF3B82F6);
+    final forcedTheme = AppTheme.light;
+
+    final items = <Widget>[
+      if (_error != null) ...[
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF2F2),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFECACA), width: 1),
+          ),
+          child: Row(children: [
+            const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(_error!, style: const TextStyle(
+              color: Color(0xFF991B1B), fontSize: 14, fontWeight: FontWeight.w500,
+            ))),
+          ]),
+        ),
+      ],
+
+      if (_success) ...[
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+          ),
+          child: const Row(children: [
+            Icon(Icons.check_circle_outline_rounded, color: Color(0xFF16A34A), size: 20),
+            SizedBox(width: 12),
+            Expanded(child: Text('Akun berhasil dibuat! Mengarahkan ke halaman masuk...', style: TextStyle(
+              color: Color(0xFF166534), fontSize: 14, fontWeight: FontWeight.w500,
+            ))),
+          ]),
+        ),
+      ],
+
+      const Text('Full Name', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      _PillTextField(
+        controller: _nameCtrl,
+        focusNode: _nameFocusNode,
+        hintText: 'John Doe',
+        autofillHints: const [AutofillHints.name],
+      ),
+      const SizedBox(height: 20),
+
+      const Text('Work Email', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      _PillTextField(
+        controller: _emailCtrl,
+        focusNode: _emailFocusNode,
+        hintText: 'name@example.com',
+        keyboardType: TextInputType.emailAddress,
+        autofillHints: const [AutofillHints.email],
+      ),
+      const SizedBox(height: 6),
+      const Text(' Please use your professional email address', style: TextStyle(color: Color(0xFFD97706), fontSize: 12, fontWeight: FontWeight.w500)),
+      const SizedBox(height: 20),
+
+      const Text('Password', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      _PillTextField(
+        controller: _passCtrl,
+        focusNode: _passFocusNode,
+        hintText: '••••••••',
+        obscureText: _obscure,
+        onToggleObscure: () {
+          HapticFeedback.selectionClick();
+          setState(() => _obscure = !_obscure);
+        },
+      ),
+      const SizedBox(height: 20),
+
+      const Text('Confirm Password', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      _PillTextField(
+        controller: _confirmCtrl,
+        focusNode: _confirmFocusNode,
+        hintText: '••••••••',
+        obscureText: _obscureConfirm,
+        onToggleObscure: () {
+          HapticFeedback.selectionClick();
+          setState(() => _obscureConfirm = !_obscureConfirm);
+        },
+      ),
+      const SizedBox(height: 24),
+
+      // Checkbox terms
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24, height: 24,
+            child: Checkbox(
+              value: _agreedToTerms,
+              onChanged: (val) {
+                HapticFeedback.selectionClick();
+                setState(() => _agreedToTerms = val ?? false);
+              },
+              activeColor: primaryBlue,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.5),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: RichText(
+              text: const TextSpan(
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13, fontWeight: FontWeight.w400),
+                children: [
+                  TextSpan(text: 'I agree to the '),
+                  TextSpan(text: 'Terms & Conditions', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.w600)),
+                  TextSpan(text: ' and '),
+                  TextSpan(text: 'Privacy Policy', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 32),
+
+      _AnimatedGradientButton(
+        onPressed: (_isLoading || _success) ? null : _register,
+        colors: const [primaryBlueLight, primaryBlue],
+        textColor: Colors.white,
+        child: _isLoading
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+            : const Text('Create Account', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.2)),
+      ),
+      const SizedBox(height: 24),
+    ];
+
+    return Theme(
+      data: forcedTheme,
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+              return Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: isWide ? 420 : double.infinity),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildStaggeredItem(
+                          index: 0,
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back_rounded, color: textPrimary, size: 24),
+                                onPressed: () => Navigator.pop(context),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                splashRadius: 24,
+                              ),
+                              const SizedBox(width: 16),
+                              const Text('Create Account', style: TextStyle(
+                                color: textPrimary, fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: -0.5
+                              )),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+
+                        ...List.generate(items.length, (index) {
+                          return _buildStaggeredItem(
+                            index: index + 1,
+                            child: items[index],
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('Buat Akun', style: TextStyle(
-                color: LumaColors.darkTextPrimary, fontSize: 32,
-                fontWeight: FontWeight.w700, letterSpacing: -0.8,
-              )),
-              const SizedBox(height: 6),
-              const Text('Simpan playlist dan lagu favoritmu.', style: TextStyle(
-                color: LumaColors.darkTextSecondary, fontSize: 15,
-              )),
-              const SizedBox(height: 36),
+    );
+  }
+}
 
-              if (_error != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A1212),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF5C2020)),
+// ── Pill-Shaped Text Field ──────────────────────────────────────────────────
+
+class _PillTextField extends StatefulWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hintText;
+  final bool obscureText;
+  final TextInputType keyboardType;
+  final Iterable<String>? autofillHints;
+  final VoidCallback? onToggleObscure;
+
+  const _PillTextField({
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    this.autofillHints,
+    this.onToggleObscure,
+  });
+
+  @override
+  State<_PillTextField> createState() => _PillTextFieldState();
+}
+
+class _PillTextFieldState extends State<_PillTextField> {
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _isFocused = widget.focusNode.hasFocus;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: _isFocused ? Colors.white : const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: _isFocused ? const Color(0xFF1C4ED8) : Colors.transparent,
+          width: _isFocused ? 1.5 : 0.0,
+        ),
+        boxShadow: _isFocused ? [
+          BoxShadow(
+            color: const Color(0xFF1C4ED8).withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ] : [],
+      ),
+      child: TextField(
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        obscureText: widget.obscureText,
+        keyboardType: widget.keyboardType,
+        autofillHints: widget.autofillHints,
+        style: const TextStyle(color: Color(0xFF111111), fontSize: 15, fontWeight: FontWeight.w500),
+        cursorColor: const Color(0xFF1C4ED8),
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontWeight: FontWeight.w400, fontSize: 15),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          suffixIcon: widget.onToggleObscure != null
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: IconButton(
+                    icon: Icon(
+                      widget.obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 20,
+                      color: const Color(0xFF6B7280),
+                    ),
+                    onPressed: widget.onToggleObscure,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
                   ),
-                  child: Row(children: [
-                    const Icon(Icons.error_outline_rounded, color: Color(0xFFFF6B6B), size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(_error!, style: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 13))),
-                  ]),
-                ),
-                const SizedBox(height: 20),
-              ],
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+}
 
-              if (_success) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0A1F0A),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF1A5C1A)),
-                  ),
-                  child: const Row(children: [
-                    Icon(Icons.check_circle_outline_rounded, color: Color(0xFF4CAF50), size: 18),
-                    SizedBox(width: 10),
-                    Expanded(child: Text('Akun berhasil dibuat! Mengarahkan ke halaman masuk...', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 13))),
-                  ]),
-                ),
-                const SizedBox(height: 20),
-              ],
+// ── Animated Gradient Button (Scale Effect) ────────────────────────────────
 
-              const Text('Email', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.email],
-                style: const TextStyle(color: LumaColors.darkTextPrimary, fontSize: 15),
-                cursorColor: LumaColors.accent,
-                decoration: InputDecoration(
-                  hintText: 'kamu@email.com',
-                  hintStyle: const TextStyle(color: LumaColors.darkTextSecondary),
-                  filled: true, fillColor: LumaColors.darkSurface,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: LumaColors.accent, width: 1.5)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-              ),
-              const SizedBox(height: 20),
+class _AnimatedGradientButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final Widget child;
+  final List<Color> colors;
+  final Color textColor;
 
-              const Text('Password', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _passCtrl,
-                obscureText: _obscure,
-                style: const TextStyle(color: LumaColors.darkTextPrimary, fontSize: 15),
-                cursorColor: LumaColors.accent,
-                decoration: InputDecoration(
-                  hintText: 'Minimal 6 karakter',
-                  hintStyle: const TextStyle(color: LumaColors.darkTextSecondary),
-                  filled: true, fillColor: LumaColors.darkSurface,
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20, color: LumaColors.darkTextSecondary),
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                  ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: LumaColors.accent, width: 1.5)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-              ),
-              const SizedBox(height: 20),
+  const _AnimatedGradientButton({
+    required this.onPressed,
+    required this.child,
+    required this.colors,
+    required this.textColor,
+  });
 
-              const Text('Ulangi Password', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _confirmCtrl,
-                obscureText: _obscureConfirm,
-                style: const TextStyle(color: LumaColors.darkTextPrimary, fontSize: 15),
-                cursorColor: LumaColors.accent,
-                decoration: InputDecoration(
-                  hintText: 'Ketik ulang password',
-                  hintStyle: const TextStyle(color: LumaColors.darkTextSecondary),
-                  filled: true, fillColor: LumaColors.darkSurface,
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20, color: LumaColors.darkTextSecondary),
-                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: LumaColors.accent, width: 1.5)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-              ),
-              const SizedBox(height: 32),
+  @override
+  State<_AnimatedGradientButton> createState() => _AnimatedGradientButtonState();
+}
 
-              SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isLoading || _success ? null : _register,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: LumaColors.accent,
-                    foregroundColor: Colors.black,
-                    elevation: 0,
-                    disabledBackgroundColor: LumaColors.accent.withValues(alpha: 0.3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5))
-                      : const Text('Buat Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2)),
-                ),
-              ),
-              const SizedBox(height: 28),
+class _AnimatedGradientButtonState extends State<_AnimatedGradientButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
 
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Text('Sudah punya akun?', style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14)),
-                const SizedBox(width: 4),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    foregroundColor: LumaColors.accent,
-                    minimumSize: const Size(48, 44),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  child: const Text('Masuk', style: TextStyle(
-                    color: LumaColors.accent, fontSize: 14, fontWeight: FontWeight.w700,
-                  )),
-                ),
-              ]),
-              const SizedBox(height: 32),
-            ],
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    if (widget.onPressed != null) {
+      _controller.forward();
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    if (widget.onPressed != null) {
+      _controller.reverse();
+      widget.onPressed!();
+    }
+  }
+
+  void _onTapCancel() {
+    if (widget.onPressed != null) _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDisabled = widget.onPressed == null;
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 52,
+          decoration: BoxDecoration(
+            gradient: isDisabled 
+                ? LinearGradient(colors: [Colors.grey.shade300, Colors.grey.shade400])
+                : LinearGradient(colors: widget.colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: !isDisabled ? [
+              BoxShadow(
+                color: widget.colors.last.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              )
+            ] : [],
           ),
+          alignment: Alignment.center,
+          child: widget.child,
         ),
       ),
     );
