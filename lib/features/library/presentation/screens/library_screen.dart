@@ -96,9 +96,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     final user = _supabase.auth.currentUser;
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
+    
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+    final surfaceColor = theme.colorScheme.surface;
 
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,24 +120,24 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       radius: 16,
                       backgroundColor: LumaColors.accent.withValues(alpha: 0.3),
                       child: Text(initial,
-                          style: const TextStyle(
-                              color: Colors.white,
+                          style: TextStyle(
+                              color: textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text('Koleksi Kamu',
                         style: TextStyle(
-                            color: Colors.white,
+                            color: textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 22)),
                   ),
                   IconButton(
                     icon: Icon(
                       _searchActive ? Icons.close_rounded : Icons.search_rounded,
-                      color: Colors.white,
+                      color: textPrimary,
                     ),
                     onPressed: () {
                       setState(() {
@@ -142,7 +147,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.add_rounded, color: Colors.white),
+                    icon: Icon(Icons.add_rounded, color: textPrimary),
                     onPressed: () async {
                       await Navigator.push(
                           context,
@@ -152,7 +157,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.settings_rounded, color: Colors.white54, size: 22),
+                    icon: Icon(Icons.settings_rounded, color: textSecondary, size: 22),
                     onPressed: () => Navigator.push(context,
                         MaterialPageRoute(builder: (_) => const SettingsScreen())),
                   ),
@@ -169,14 +174,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       child: TextField(
                         controller: _searchController,
                         autofocus: true,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: TextStyle(color: textPrimary, fontSize: 14),
                         onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           hintText: 'Cari di koleksi kamu...',
-                          hintStyle: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
-                          prefixIcon: const Icon(Icons.search_rounded, color: LumaColors.darkTextSecondary, size: 20),
+                          hintStyle: TextStyle(color: textSecondary, fontSize: 14),
+                          prefixIcon: Icon(Icons.search_rounded, color: textSecondary, size: 20),
                           filled: true,
-                          fillColor: LumaColors.darkSurface,
+                          fillColor: surfaceColor,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
@@ -209,12 +214,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: selected ? LumaColors.accent : LumaColors.darkSurface,
+                            color: selected ? LumaColors.accent : surfaceColor,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(f,
                               style: TextStyle(
-                                  color: selected ? Colors.black : Colors.white70,
+                                  color: selected ? Colors.black : textPrimary,
                                   fontSize: 13,
                                   fontWeight: selected ? FontWeight.w700 : FontWeight.normal)),
                         ),
@@ -234,7 +239,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   : RefreshIndicator(
                       onRefresh: _fetchAll,
                       color: LumaColors.accent,
-                      backgroundColor: LumaColors.darkSurface,
+                      backgroundColor: surfaceColor,
                       child: _buildList(),
                     ),
             ),
@@ -309,13 +314,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             const SizedBox(height: 16),
             Text(
               q.isNotEmpty ? 'Tidak ada hasil untuk "$q"' : 'Koleksi Masih Kosong',
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 16, fontWeight: FontWeight.bold),
             ),
             if (q.isEmpty) ...[
               const SizedBox(height: 8),
-              const Text('Buat playlist pertamamu dan kumpulkan lagu favoritmu di sini.',
+              Text('Buat playlist pertamamu dan kumpulkan lagu favoritmu di sini.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13)),
+                  style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 13)),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -366,15 +371,15 @@ class _DownloadsRow extends StatelessWidget {
           color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: const Icon(Icons.download_done_rounded, color: Colors.white70, size: 28),
+        child: Icon(Icons.download_done_rounded, color: Theme.of(context).textTheme.bodyMedium?.color, size: 28),
       ),
-      title: const Text('Unduhan',
-          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+      title: Text('Unduhan',
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 15, fontWeight: FontWeight.w600)),
       subtitle: Text(
         count == 0 ? 'Belum ada lagu tersimpan' : '$count lagu · tersimpan offline',
-        style: const TextStyle(color: Colors.white54, fontSize: 12),
+        style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 12),
       ),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white30),
+      trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).dividerColor),
       onTap: onTap,
     );
   }
@@ -405,11 +410,11 @@ class _LikedSongsRow extends StatelessWidget {
         ),
         child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 28),
       ),
-      title: const Text('Lagu yang Disukai',
-          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+      title: Text('Lagu yang Disukai',
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 15, fontWeight: FontWeight.w600)),
       subtitle: Text('$count lagu',
-          style: const TextStyle(color: Colors.white54, fontSize: 12)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white30),
+          style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 12)),
+      trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).dividerColor),
       onTap: onTap,
     );
   }
@@ -430,18 +435,18 @@ class _PlaylistRow extends StatelessWidget {
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: LumaColors.darkSurface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(4),
         ),
-        child: const Icon(Icons.queue_music_rounded, color: Colors.white38, size: 26),
+        child: Icon(Icons.queue_music_rounded, color: Theme.of(context).dividerColor, size: 26),
       ),
       title: Text(playlist['name'] ?? 'Playlist',
-      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 15, fontWeight: FontWeight.w600),
           maxLines: 1,
           overflow: TextOverflow.ellipsis),
-      subtitle: const Text('Playlist • Kamu',
-          style: TextStyle(color: Colors.white54, fontSize: 12)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white30),
+      subtitle: Text('Playlist • Kamu',
+          style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 12)),
+      trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).dividerColor),
       onTap: onTap,
     );
   }
