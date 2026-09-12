@@ -47,10 +47,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final displayName = _displayName(user);
     final memberSince = _memberSince(user?.createdAt);
 
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Profil', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Profil', style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
@@ -61,17 +65,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             CircleAvatar(
               radius: 50,
               backgroundColor: LumaColors.accent.withValues(alpha: 0.2),
-              child: Text(initial, style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
+              child: Text(initial, style: TextStyle(color: textPrimary, fontSize: 40, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 16),
             Text(
               displayName,
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4),
+              style: TextStyle(color: textPrimary, fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4),
             ),
             const SizedBox(height: 4),
             Text(
               user?.email ?? '',
-              style: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
+              style: TextStyle(color: textSecondary, fontSize: 14),
             ),
             if (memberSince.isNotEmpty) ...[
               const SizedBox(height: 6),
@@ -104,8 +108,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   }
                 },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
+                  foregroundColor: textPrimary,
+                  side: BorderSide(color: theme.dividerColor),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                 ),
@@ -130,8 +134,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               width: double.infinity,
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
+                  foregroundColor: textPrimary,
+                  side: BorderSide(color: theme.dividerColor),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -156,19 +160,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _tile(BuildContext context,
       {required IconData icon, required String label, required VoidCallback onTap}) {
+    final theme = Theme.of(context);
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: LumaColors.darkSurface,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: Colors.white70, size: 20),
+        child: Icon(icon, color: theme.textTheme.bodyMedium?.color, size: 20),
       ),
-      title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 15)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white24),
+      title: Text(label, style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 15)),
+      trailing: Icon(Icons.chevron_right_rounded, color: theme.dividerColor),
       onTap: onTap,
     );
   }
