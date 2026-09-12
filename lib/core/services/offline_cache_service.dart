@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:universal_io/io.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +15,17 @@ class OfflineCacheService {
 
   final Dio _dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(minutes: 5),
+    receiveTimeout: const Duration(minutes: 8),
+    followRedirects: true,
+    maxRedirects: 5,
+    headers: {
+      // YouTube / GoogleVideo CDN requires a browser-like User-Agent;
+      // requests without it return 403 Forbidden.
+      'User-Agent':
+          'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 '
+          '(KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+      'Range': 'bytes=0-',
+    },
   ));
 
   Directory? _dir;
@@ -30,6 +40,7 @@ class OfflineCacheService {
   double? getProgress(String youtubeId) => downloadProgress.value[youtubeId];
 
   Future<Directory> _cacheDir() async {
+    if (kIsWeb) throw UnsupportedError('File system not supported on web');
     if (_dir != null) return _dir!;
     final docs = await getApplicationDocumentsDirectory();
     final dir = Directory('${docs.path}/offline_tracks');
@@ -61,6 +72,7 @@ class OfflineCacheService {
   }
 
   Future<bool> isCached(String youtubeId) async {
+    if (kIsWeb) return false;
     try {
       return await (await _audioFile(youtubeId)).exists();
     } catch (_) {
@@ -69,14 +81,20 @@ class OfflineCacheService {
   }
 
   Future<String?> localPath(String youtubeId) async {
-    final file = await _audioFile(youtubeId);
-    if (await file.exists()) return file.path;
+    if (kIsWeb) return null;
+    try {
+      final file = await _audioFile(youtubeId);
+      if (await file.exists()) return file.path;
+    } catch (_) {}
     return null;
   }
 
   Future<String?> localThumbnailPath(String youtubeId) async {
-    final file = await _thumbFile(youtubeId);
-    if (await file.exists()) return file.path;
+    if (kIsWeb) return null;
+    try {
+      final file = await _thumbFile(youtubeId);
+      if (await file.exists()) return file.path;
+    } catch (_) {}
     return null;
   }
 
@@ -85,6 +103,11 @@ class OfflineCacheService {
     String streamUrl, {
     void Function(double progress)? onProgress,
   }) async {
+    if (kIsWeb) {
+      debugPrint('[Offline] Downloading is disabled on Web.');
+      return;
+    }
+
     final file = await _audioFile(item.id);
     final thumb = await _thumbFile(item.id);
     final meta = await _metaFile(item.id);
@@ -150,6 +173,7 @@ class OfflineCacheService {
   }
 
   Future<void> remove(String youtubeId) async {
+    if (kIsWeb) return;
     final audio = await _audioFile(youtubeId);
     final thumb = await _thumbFile(youtubeId);
     final meta = await _metaFile(youtubeId);
@@ -159,16 +183,19 @@ class OfflineCacheService {
   }
 
   Future<void> clearAll() async {
-    final dir = await _cacheDir();
-    if (await dir.exists()) {
-      await for (final entity in dir.list()) {
-        try {
-          await entity.delete(recursive: true);
-        } catch (e) {
-          debugPrint('[Offline] clear entity error: $e');
+    if (kIsWeb) return;
+    try {
+      final dir = await _cacheDir();
+      if (await dir.exists()) {
+        await for (final entity in dir.list()) {
+          try {
+            await entity.delete(recursive: true);
+          } catch (e) {
+            debugPrint('[Offline] clear entity error: $e');
+          }
         }
       }
-    }
+    } catch (_) {}
   }
 
   Future<int> getTrackSizeBytes(String youtubeId) async {
@@ -205,6 +232,7 @@ class OfflineCacheService {
   }
 
   Future<List<MusicItem>> listCached() async {
+    if (kIsWeb) return const [];
     final dir = await _cacheDir();
     final items = <MusicItem>[];
     await for (final entity in dir.list()) {

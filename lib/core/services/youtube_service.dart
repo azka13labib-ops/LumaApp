@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:universal_io/io.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -141,7 +141,11 @@ class YouTubeService {
   Future<List<MusicItem>> _searchInnerTube(String query) async {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
     try {
-      final uri = Uri.parse('https://www.youtube.com/youtubei/v1/search');
+      final targetUrl = 'https://www.youtube.com/youtubei/v1/search';
+      final url = kIsWeb 
+          ? 'https://corsproxy.io/?${Uri.encodeComponent(targetUrl)}'
+          : targetUrl;
+      final uri = Uri.parse(url);
       final request = await client.postUrl(uri).timeout(const Duration(seconds: 10));
       request.headers.set('content-type', 'application/json');
       request.headers.set('user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
@@ -260,7 +264,11 @@ class YouTubeService {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
     try {
       for (int attempt = 0; attempt < 2; attempt++) {
-        final uri = Uri.https(_host, '/dl', {'id': cleanId});
+        final targetUrl = 'https://$_host/dl?id=$cleanId';
+        final url = kIsWeb 
+            ? 'https://corsproxy.io/?${Uri.encodeComponent(targetUrl)}'
+            : targetUrl;
+        final uri = Uri.parse(url);
         final request = await client.getUrl(uri).timeout(const Duration(seconds: 10));
 
         request.headers.set('x-rapidapi-host', _host);
