@@ -6,6 +6,7 @@ import '../../../../core/providers/player_provider.dart';
 import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class DownloadsScreen extends ConsumerStatefulWidget {
   const DownloadsScreen({super.key});
@@ -146,12 +147,17 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                                 onTap: () => ref.read(playerProvider.notifier).play(_items, i),
                                 leading: ClipRRect(
                                   borderRadius: BorderRadius.circular(4),
-                                  child: Image.network(
-                                    item.thumbnailUrl,
+                                  child: CachedNetworkImage(
+                                    imageUrl: item.thumbnailUrl,
                                     width: 48,
                                     height: 48,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
+                                    placeholder: (context, url) => Container(
+                                      width: 48,
+                                      height: 48,
+                                      color: LumaColors.darkSurface,
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
                                       width: 48,
                                       height: 48,
                                       color: LumaColors.darkSurface,

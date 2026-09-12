@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/player_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class QueueSheet extends ConsumerWidget {
   const QueueSheet({super.key});
@@ -76,12 +77,17 @@ class QueueSheet extends ConsumerWidget {
                           },
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(4),
-                            child: Image.network(
-                              item.thumbnailUrl,
+                            child: CachedNetworkImage(
+                              imageUrl: item.thumbnailUrl,
                               width: 44,
                               height: 44,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              placeholder: (context, url) => Container(
+                                width: 44,
+                                height: 44,
+                                color: LumaColors.darkSurface,
+                              ),
+                              errorWidget: (context, url, error) => Container(
                                 width: 44,
                                 height: 44,
                                 color: LumaColors.darkSurface,

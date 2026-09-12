@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../screens/player_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MiniPlayer extends ConsumerWidget {
   const MiniPlayer({super.key});
@@ -68,12 +69,17 @@ class MiniPlayer extends ConsumerWidget {
                         tag: 'player_artwork_${item.id}',
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(6),
-                          child: Image.network(
-                            item.thumbnailUrl,
+                          child: CachedNetworkImage(
+                            imageUrl: item.thumbnailUrl,
                             width: 44,
                             height: 44,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                            placeholder: (context, url) => Container(
+                              width: 44,
+                              height: 44,
+                              color: const Color(0xFF222222),
+                            ),
+                            errorWidget: (context, url, error) => Container(
                               width: 44,
                               height: 44,
                               color: const Color(0xFF222222),

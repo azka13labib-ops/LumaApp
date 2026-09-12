@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ArtistScreen extends ConsumerStatefulWidget {
   const ArtistScreen({super.key, required this.artistName});
@@ -165,12 +166,17 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                       onTap: () => ref.read(playerProvider.notifier).play(_tracks, i),
                       leading: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: Image.network(
-                          item.thumbnailUrl,
+                        child: CachedNetworkImage(
+                          imageUrl: item.thumbnailUrl,
                           width: 48,
                           height: 48,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          placeholder: (context, url) => Container(
+                            width: 48,
+                            height: 48,
+                            color: LumaColors.darkSurface,
+                          ),
+                          errorWidget: (context, url, error) => Container(
                             width: 48,
                             height: 48,
                             color: LumaColors.darkSurface,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/services/youtube_service.dart';
@@ -547,10 +548,13 @@ class _HorizontalCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                item.thumbnailUrl,
+              child: CachedNetworkImage(
+                imageUrl: item.thumbnailUrl,
                 width: 104, height: 104, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                placeholder: (context, url) => Container(
+                  width: 104, height: 104, color: Theme.of(context).colorScheme.surface,
+                ),
+                errorWidget: (context, url, error) => Container(
                   width: 104, height: 104, color: Theme.of(context).colorScheme.surface,
                   child: Icon(Icons.music_note, color: Theme.of(context).dividerColor, size: 32),
                 ),
@@ -587,7 +591,7 @@ class _HeroCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           image: DecorationImage(
-            image: NetworkImage(item.thumbnailUrl),
+            image: CachedNetworkImageProvider(item.thumbnailUrl),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.5), BlendMode.darken),
           ),

@@ -9,6 +9,7 @@ import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
 import '../../../search/presentation/widgets/playlist_picker_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class TrackRow extends ConsumerWidget {
   const TrackRow({
@@ -34,12 +35,17 @@ class TrackRow extends ConsumerWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: Image.network(
-                item.thumbnailUrl,
+              child: CachedNetworkImage(
+                imageUrl: item.thumbnailUrl,
                 width: 48,
                 height: 48,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                placeholder: (context, url) => Container(
+                    width: 48,
+                    height: 48,
+                    color: LumaColors.darkSurface,
+                ),
+                errorWidget: (context, url, error) => Container(
                     width: 48,
                     height: 48,
                     color: LumaColors.darkSurface,
@@ -105,12 +111,17 @@ class TrackRow extends ConsumerWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
-                    child: Image.network(
-                      item.thumbnailUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: item.thumbnailUrl,
                       width: 48,
                       height: 48,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      placeholder: (context, url) => Container(
+                        width: 48,
+                        height: 48,
+                        color: const Color(0xFF222222),
+                      ),
+                      errorWidget: (context, url, error) => Container(
                         width: 48,
                         height: 48,
                         color: const Color(0xFF222222),

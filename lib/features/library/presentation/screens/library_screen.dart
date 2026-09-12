@@ -10,6 +10,7 @@ import 'playlist_detail_screen.dart';
 import 'settings_screen.dart';
 import 'downloads_screen.dart';
 import '../../../../core/services/offline_cache_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -199,29 +200,35 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
             // ── Filter Chips ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 child: Row(
                   children: ['Semua', 'Playlist', 'Lagu Disukai', 'Unduhan'].map((f) {
                     final selected = _filter == f;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(24),
                         onTap: () => setState(() => _filter = f),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? LumaColors.accent : surfaceColor,
-                            borderRadius: BorderRadius.circular(20),
+                            color: selected ? LumaColors.accent : Colors.transparent,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: selected ? LumaColors.accent : theme.dividerColor,
+                              width: 1,
+                            ),
                           ),
                           child: Text(f,
                               style: TextStyle(
                                   color: selected ? Colors.black : textPrimary,
                                   fontSize: 13,
-                                  fontWeight: selected ? FontWeight.w700 : FontWeight.normal)),
+                                  letterSpacing: -0.2,
+                                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500)),
                         ),
                       ),
                     );
@@ -306,41 +313,46 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
 
     if (items.isEmpty) {
+      final theme = Theme.of(context);
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.library_music_rounded, color: Colors.white12, size: 64),
-            const SizedBox(height: 16),
-            Text(
-              q.isNotEmpty ? 'Tidak ada hasil untuk "$q"' : 'Koleksi Masih Kosong',
-              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            if (q.isEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Buat playlist pertamamu dan kumpulkan lagu favoritmu di sini.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 13)),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: LumaColors.accent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Buat Playlist Baru', style: TextStyle(fontWeight: FontWeight.w600)),
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CreatePlaylistScreen()),
-                  );
-                  _fetchAll();
-                },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.library_music_rounded, color: theme.dividerColor, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                q.isNotEmpty ? 'Tidak ada hasil untuk "$q"' : 'Koleksi Masih Kosong',
+                style: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5),
               ),
-            ]
-          ],
+              if (q.isEmpty) ...[
+                const SizedBox(height: 12),
+                Text('Buat playlist pertamamu dan kumpulkan lagu favoritmu di sini.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: theme.textTheme.labelSmall?.color, fontSize: 14, height: 1.4)),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: LumaColors.accent,
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  label: const Text('Buat Playlist Baru', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, letterSpacing: -0.2)),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreatePlaylistScreen()),
+                    );
+                    _fetchAll();
+                  },
+                ),
+              ]
+            ],
+          ),
         ),
       );
     }
@@ -365,11 +377,11 @@ class _DownloadsRow extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: Container(
-        width: 56,
-        height: 56,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(4),
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(Icons.download_done_rounded, color: Theme.of(context).textTheme.bodyMedium?.color, size: 28),
       ),
@@ -398,15 +410,15 @@ class _LikedSongsRow extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: Container(
-        width: 56,
-        height: 56,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [Color(0xFF450AF5), Color(0xFF8DC9CF)],
           ),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 28),
       ),
@@ -429,16 +441,26 @@ class _PlaylistRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final coverUrl = playlist['cover_url'] as String?;
+    
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: Container(
-        width: 56,
-        height: 56,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(6),
+          image: coverUrl != null 
+            ? DecorationImage(
+                image: CachedNetworkImageProvider(coverUrl),
+                fit: BoxFit.cover,
+              )
+            : null,
         ),
-        child: Icon(Icons.queue_music_rounded, color: Theme.of(context).dividerColor, size: 26),
+        child: coverUrl == null 
+          ? Icon(Icons.queue_music_rounded, color: Theme.of(context).dividerColor, size: 26)
+          : null,
       ),
       title: Text(playlist['name'] ?? 'Playlist',
       style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 15, fontWeight: FontWeight.w600),

@@ -8,6 +8,7 @@ import '../../../../core/services/offline_cache_service.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
 import '../widgets/lyrics_sheet.dart';
 import '../widgets/queue_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 // Palette state provider: per-thumbnail URL
 final _paletteProvider =
@@ -15,7 +16,7 @@ final _paletteProvider =
   if (url.isEmpty) return LumaColors.darkSurface;
   try {
     final pg = await PaletteGenerator.fromImageProvider(
-      NetworkImage(url),
+      CachedNetworkImageProvider(url),
       size: const Size(100, 100),
       maximumColorCount: 8,
     );
@@ -295,10 +296,13 @@ class PlayerScreen extends ConsumerWidget {
                         tag: 'player_artwork_${item.id}',
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            item.thumbnailUrl,
+                          child: CachedNetworkImage(
+                            imageUrl: item.thumbnailUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                            placeholder: (context, url) => Container(
+                              color: const Color(0xFF1A1A1A),
+                            ),
+                            errorWidget: (context, url, error) => Container(
                               color: const Color(0xFF1A1A1A),
                               child: const Icon(Icons.music_note_rounded,
                                   color: Colors.white24, size: 64),
