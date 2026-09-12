@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:universal_io/io.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,11 +31,13 @@ enum AudioQuality {
 
 enum ThemePreference {
   oled,
-  midnight;
+  midnight,
+  light;
 
   String get label => switch (this) {
         ThemePreference.oled => 'Gelap OLED (Pitch Black)',
         ThemePreference.midnight => 'Gelap Midnight (Deep Navy)',
+        ThemePreference.light => 'Terang (Light Mode)',
       };
 
   String get description => switch (this) {
@@ -43,6 +45,8 @@ enum ThemePreference {
           'Hitam pekat murni (#000000) untuk efisiensi baterai maksimal.',
         ThemePreference.midnight =>
           'Nuansa biru malam elegan (#0B0F17) yang lembut di mata.',
+        ThemePreference.light =>
+          'Tampilan bersih dan terang (#FFFFFF) untuk penggunaan siang hari.',
       };
 }
 
@@ -55,7 +59,7 @@ class AppSettings {
 
   const AppSettings({
     this.audioQuality = AudioQuality.auto,
-    this.themePreference = ThemePreference.oled,
+    this.themePreference = ThemePreference.light,
     this.autoplay = true,
     this.offlineOnly = false,
     this.showNotificationControls = true,
@@ -94,7 +98,7 @@ class AppSettings {
       ),
       themePreference: ThemePreference.values.firstWhere(
         (e) => e.name == map['themePreference'],
-        orElse: () => ThemePreference.oled,
+        orElse: () => ThemePreference.light,
       ),
       autoplay: map['autoplay'] as bool? ?? true,
       offlineOnly: map['offlineOnly'] as bool? ?? false,
