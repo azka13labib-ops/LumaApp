@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'core/theme/app_theme.dart';
-import 'package:luma_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:luma_app/features/auth/presentation/screens/welcome_screen.dart';
 import 'package:luma_app/features/home/presentation/screens/home_screen.dart';
 import 'package:luma_app/features/search/presentation/screens/search_screen.dart';
 import 'package:luma_app/features/library/presentation/screens/library_screen.dart';
@@ -74,7 +74,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       darkTheme: settings.themePreference == ThemePreference.midnight 
           ? AppTheme.midnight 
           : AppTheme.dark,
-      home: _user == null ? const LoginScreen() : const MainShell(),
+      home: _user == null ? const WelcomeScreen() : const MainShell(),
     );
   }
 }
