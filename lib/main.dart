@@ -1,4 +1,4 @@
-import 'dart:io' show Platform;
+import 'package:universal_io/io.dart' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +13,7 @@ import 'package:luma_app/features/search/presentation/screens/search_screen.dart
 import 'package:luma_app/features/library/presentation/screens/library_screen.dart';
 import 'package:luma_app/features/premium/presentation/screens/premium_screen.dart';
 import 'package:luma_app/features/player/presentation/widgets/mini_player.dart';
+import 'core/services/settings_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,14 +41,14 @@ void main() async {
   );
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends ConsumerState<MyApp> {
   User? _user;
 
   @override
@@ -61,12 +62,18 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider);
+    final isLight = settings.themePreference == ThemePreference.light;
+    final themeMode = isLight ? ThemeMode.light : ThemeMode.dark;
+
     return MaterialApp(
       title: 'LumaApp',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
-      theme: AppTheme.dark,
-      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      theme: AppTheme.light,
+      darkTheme: settings.themePreference == ThemePreference.midnight 
+          ? AppTheme.midnight 
+          : AppTheme.dark,
       home: _user == null ? const LoginScreen() : const MainShell(),
     );
   }
@@ -107,9 +114,9 @@ class _MainShellState extends State<MainShell> {
               currentIndex: _currentIndex,
               onTap: (index) => setState(() => _currentIndex = index),
               type: BottomNavigationBarType.fixed,
-              backgroundColor: LumaColors.darkBg,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               selectedItemColor: LumaColors.accent,
-              unselectedItemColor: Colors.white60,
+              unselectedItemColor: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ?? Colors.grey,
               selectedFontSize: 11,
               unselectedFontSize: 11,
               elevation: 0,
