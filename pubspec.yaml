@@ -46,6 +46,9 @@ dependencies:
   url_launcher: any
   google_fonts: any
   universal_io: any
+  image_picker: any
+  image_picker_web: any
+  cached_network_image: any
 
 dev_dependencies:
   flutter_test:
