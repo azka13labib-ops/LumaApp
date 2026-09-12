@@ -42,18 +42,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
     final email = user?.email ?? 'Tidak diketahui';
     final settings = ref.watch(settingsProvider);
+    
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+    final surfaceColor = theme.colorScheme.surface;
 
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Pengaturan',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Pengaturan',
+            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
       ),
       body: ListView(
         children: [
@@ -66,8 +71,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   radius: 32,
                   backgroundColor: LumaColors.accent.withValues(alpha: 0.3),
                   child: Text(initial,
-                      style: const TextStyle(
-                          color: Colors.white,
+                      style: TextStyle(
+                          color: textPrimary,
                           fontSize: 26,
                           fontWeight: FontWeight.bold)),
                 ),
@@ -76,8 +81,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(email,
-                        style: const TextStyle(
-                            color: Colors.white,
+                        style: TextStyle(
+                            color: textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w600)),
                     const SizedBox(height: 4),
@@ -92,9 +97,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        const Text('Akun Standar',
+                        Text('Akun Standar',
                             style: TextStyle(
-                                color: LumaColors.darkTextSecondary,
+                                color: textSecondary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500)),
                       ],
@@ -117,7 +122,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           const SizedBox(height: 8),
-          _SectionLabel('Pemutaran'),
+          _SectionLabel('Pemutaran', textColor: textSecondary),
           _SettingsTile(
             icon: Icons.high_quality_rounded,
             label: 'Kualitas Audio',
@@ -126,12 +131,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           SwitchListTile.adaptive(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            secondary: const Icon(Icons.playlist_play_rounded, color: Colors.white70, size: 24),
-            title: const Text('Putar Otomatis (Autoplay)',
-                style: TextStyle(color: Colors.white, fontSize: 15)),
-            subtitle: const Text(
+            secondary: Icon(Icons.playlist_play_rounded, color: textPrimary, size: 24),
+            title: Text('Putar Otomatis (Autoplay)',
+                style: TextStyle(color: textPrimary, fontSize: 15)),
+            subtitle: Text(
               'Lanjutkan pemutaran musik serupa saat antrean habis',
-              style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
+              style: TextStyle(color: textSecondary, fontSize: 12),
             ),
             value: settings.autoplay,
             activeColor: LumaColors.accent,
@@ -141,12 +146,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           SwitchListTile.adaptive(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            secondary: const Icon(Icons.cloud_off_rounded, color: Colors.white70, size: 24),
-            title: const Text('Mode Hanya Offline',
-                style: TextStyle(color: Colors.white, fontSize: 15)),
-            subtitle: const Text(
+            secondary: Icon(Icons.cloud_off_rounded, color: textPrimary, size: 24),
+            title: Text('Mode Hanya Offline',
+                style: TextStyle(color: textPrimary, fontSize: 15)),
+            subtitle: Text(
               'Hanya putar lagu yang telah tersimpan di perangkat',
-              style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
+              style: TextStyle(color: textSecondary, fontSize: 12),
             ),
             value: settings.offlineOnly,
             activeColor: LumaColors.accent,
@@ -167,7 +172,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           const SizedBox(height: 8),
-          _SectionLabel('Tampilan'),
+          _SectionLabel('Tampilan', textColor: textSecondary),
           _SettingsTile(
             icon: Icons.dark_mode_rounded,
             label: 'Tema Tampilan',
@@ -176,7 +181,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           const SizedBox(height: 8),
-          _SectionLabel('Penyimpanan & Cache'),
+          _SectionLabel('Penyimpanan & Cache', textColor: textSecondary),
           _SettingsTile(
             icon: Icons.storage_rounded,
             label: 'Cache Musik Offline',
@@ -193,15 +198,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           const SizedBox(height: 8),
-          _SectionLabel('Notifikasi'),
+          _SectionLabel('Notifikasi', textColor: textSecondary),
           SwitchListTile.adaptive(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            secondary: const Icon(Icons.notifications_active_outlined, color: Colors.white70, size: 24),
-            title: const Text('Kontrol di Bilah Notifikasi',
-                style: TextStyle(color: Colors.white, fontSize: 15)),
-            subtitle: const Text(
+            secondary: Icon(Icons.notifications_active_outlined, color: textPrimary, size: 24),
+            title: Text('Kontrol di Bilah Notifikasi',
+                style: TextStyle(color: textPrimary, fontSize: 15)),
+            subtitle: Text(
               'Tampilkan kontrol pemutar musik di bilah status dan lockscreen',
-              style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
+              style: TextStyle(color: textSecondary, fontSize: 12),
             ),
             value: settings.showNotificationControls,
             activeColor: LumaColors.accent,
@@ -211,7 +216,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           const SizedBox(height: 8),
-          _SectionLabel('Bantuan & Informasi'),
+          _SectionLabel('Bantuan & Informasi', textColor: textSecondary),
           _SettingsTile(
             icon: Icons.bug_report_outlined,
             label: 'Laporkan Masalah',
@@ -226,7 +231,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           const SizedBox(height: 16),
-          const Divider(color: Color(0xFF1E1E1E), height: 1),
+          Divider(color: theme.dividerColor, height: 1),
           const SizedBox(height: 8),
 
           // ── Logout ──
@@ -244,17 +249,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    backgroundColor: LumaColors.darkSurface,
-                    title: const Text('Keluar?',
-                        style: TextStyle(color: Colors.white)),
-                    content: const Text(
+                    backgroundColor: surfaceColor,
+                    title: Text('Keluar?',
+                        style: TextStyle(color: textPrimary)),
+                    content: Text(
                         'Kamu akan keluar dari akun LumaApp.',
-                        style: TextStyle(color: Colors.white70)),
+                        style: TextStyle(color: textSecondary)),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Batal',
-                              style: TextStyle(color: Colors.white54))),
+                          child: Text('Batal',
+                              style: TextStyle(color: textSecondary))),
                       TextButton(
                           onPressed: () => Navigator.pop(ctx, true),
                           child: Text('Keluar',
@@ -292,9 +297,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showQualitySheet(BuildContext context, AudioQuality current) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: LumaColors.darkSurface,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
       builder: (ctx) => SafeArea(
@@ -308,13 +317,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: theme.dividerColor,
                       borderRadius: BorderRadius.circular(2))),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text('Pilih Kualitas Audio',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.bold)),
               ),
@@ -326,17 +335,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     isSelected
                         ? Icons.radio_button_checked_rounded
                         : Icons.radio_button_off_rounded,
-                    color: isSelected ? LumaColors.accent : Colors.white38,
+                    color: isSelected ? LumaColors.accent : textSecondary,
                   ),
                   title: Text(quality.label,
                       style: TextStyle(
-                          color: isSelected ? LumaColors.accent : Colors.white,
+                          color: isSelected ? LumaColors.accent : textPrimary,
                           fontSize: 15,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w500)),
                   subtitle: Text(quality.description,
-                      style: const TextStyle(
-                          color: LumaColors.darkTextSecondary, fontSize: 12)),
+                      style: TextStyle(
+                          color: textSecondary, fontSize: 12)),
                   onTap: () {
                     ref
                         .read(settingsProvider.notifier)
@@ -354,9 +363,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showThemeSheet(BuildContext context, ThemePreference current) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: LumaColors.darkSurface,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
       builder: (ctx) => SafeArea(
@@ -371,21 +384,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: theme.dividerColor,
                       borderRadius: BorderRadius.circular(2)),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Pilih Nuansa Tema',
+              Text('Pilih Nuansa Tema',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Pilih varian tema gelap sesuai preferensi layar dan kenyamanan visual kamu.',
                 style: TextStyle(
-                    color: LumaColors.darkTextSecondary, fontSize: 14, height: 1.4),
+                    color: textSecondary, fontSize: 14, height: 1.4),
               ),
               const SizedBox(height: 16),
               ...ThemePreference.values.map((theme) {
@@ -396,17 +409,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     isSelected
                         ? Icons.radio_button_checked_rounded
                         : Icons.radio_button_off_rounded,
-                    color: isSelected ? LumaColors.accent : Colors.white38,
+                    color: isSelected ? LumaColors.accent : textSecondary,
                   ),
                   title: Text(theme.label,
                       style: TextStyle(
-                          color: isSelected ? LumaColors.accent : Colors.white,
+                          color: isSelected ? LumaColors.accent : textPrimary,
                           fontSize: 15,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w600)),
                   subtitle: Text(theme.description,
-                      style: const TextStyle(
-                          color: LumaColors.darkTextSecondary, fontSize: 12)),
+                      style: TextStyle(
+                          color: textSecondary, fontSize: 12)),
                   onTap: () {
                     ref
                         .read(settingsProvider.notifier)
@@ -424,20 +437,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _showClearCacheDialog(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: LumaColors.darkSurface,
-        title: const Text('Bersihkan Cache Musik?',
-            style: TextStyle(color: Colors.white)),
+        backgroundColor: theme.colorScheme.surface,
+        title: Text('Bersihkan Cache Musik?',
+            style: TextStyle(color: textPrimary)),
         content: Text(
           'Tindakan ini akan menghapus semua lagu offline (${OfflineCacheService.formatBytes(_cacheSizeBytes)}) dari penyimpanan perangkat. Akun dan daftar putar kamu tetap aman.',
-          style: const TextStyle(color: Colors.white70, height: 1.4),
+          style: TextStyle(color: textSecondary, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+            child: Text('Batal', style: TextStyle(color: textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -475,36 +492,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'Lainnya',
     ];
 
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: LumaColors.darkSurface,
-          title: const Text('Laporkan Masalah',
-              style: TextStyle(color: Colors.white)),
+          backgroundColor: theme.colorScheme.surface,
+          title: Text('Laporkan Masalah',
+              style: TextStyle(color: textPrimary)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Kategori Masalah:',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(color: textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: LumaColors.darkBg,
+                    color: theme.scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: theme.dividerColor),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: selectedCategory,
                       isExpanded: true,
-                      dropdownColor: LumaColors.darkSurface,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      dropdownColor: theme.colorScheme.surface,
+                      style: TextStyle(color: textPrimary, fontSize: 14),
                       items: categories
                           .map((cat) => DropdownMenuItem(
                                 value: cat,
@@ -520,15 +541,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Deskripsi Masalah:',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(color: textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: controller,
                   maxLines: 4,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: textPrimary, fontSize: 14),
                   decoration: const InputDecoration(
                     hintText: 'Tuliskan detail kendala atau saran kamu di sini...',
                   ),
@@ -539,7 +560,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Batal', style: TextStyle(color: Colors.white60)),
+              child: Text('Batal', style: TextStyle(color: textSecondary)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -569,24 +590,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showAbout(BuildContext context) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: LumaColors.darkSurface,
-        title: const Text('LumaApp', style: TextStyle(color: Colors.white)),
+        backgroundColor: theme.colorScheme.surface,
+        title: Text('LumaApp', style: TextStyle(color: textPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Versi 1.0.0 (Build Rilis)\n\nAplikasi pemutar musik offline-first yang berfokus pada kemurnian audio dan keterbacaan antarmuka pengguna tanpa distorsi.',
-              style: TextStyle(color: Colors.white70, height: 1.4),
+              style: TextStyle(color: textSecondary, height: 1.4),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Kebijakan Privasi: LumaApp menghargai privasi kamu. Data koleksi dan riwayat pemutaran disimpan secara privat dan aman.',
               style: TextStyle(
-                  color: LumaColors.darkTextSecondary, fontSize: 12, height: 1.4),
+                  color: textSecondary, fontSize: 12, height: 1.4),
             ),
             const SizedBox(height: 8),
             TextButton.icon(
@@ -617,16 +642,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
+  const _SectionLabel(this.label, {this.textColor});
   final String label;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Text(label.toUpperCase(),
-          style: const TextStyle(
-              color: Colors.white60,
+          style: TextStyle(
+              color: textColor ?? Colors.white60,
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2)),
@@ -648,17 +674,21 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     return ListTile(
-      leading: Icon(icon, color: Colors.white70, size: 22),
+      leading: Icon(icon, color: textSecondary, size: 22),
       title: Text(label,
-          style: const TextStyle(color: Colors.white, fontSize: 15)),
+          style: TextStyle(color: textPrimary, fontSize: 15)),
       subtitle: subtitle != null
           ? Text(subtitle!,
-              style: const TextStyle(
-                  color: LumaColors.darkTextSecondary, fontSize: 12))
+              style: TextStyle(
+                  color: textSecondary, fontSize: 12))
           : null,
-      trailing: const Icon(Icons.chevron_right_rounded,
-          color: Colors.white38, size: 20),
+      trailing: Icon(Icons.chevron_right_rounded,
+          color: textSecondary.withValues(alpha: 0.5), size: 20),
       onTap: onTap,
     );
   }
