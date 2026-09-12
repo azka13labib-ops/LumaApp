@@ -172,9 +172,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final user = _supabase.auth.currentUser;
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
+    
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
 
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -210,8 +214,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Text(
                     _greeting(),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.4,
@@ -249,14 +253,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       label: Text(g),
                       selected: isSelected,
                       selectedColor: LumaColors.accent,
-                      backgroundColor: LumaColors.darkSurface,
+                      backgroundColor: theme.colorScheme.surface,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.black : Colors.white,
+                        color: isSelected ? Colors.black : textPrimary,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                         fontSize: 13,
                       ),
                       side: BorderSide(
-                        color: isSelected ? LumaColors.accent : Colors.white12,
+                        color: isSelected ? LumaColors.accent : theme.dividerColor,
                       ),
                       onSelected: (val) {
                         if (val && _selectedGenre != g) {
@@ -299,7 +303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return RefreshIndicator(
       onRefresh: _fetchData,
       color: LumaColors.accent,
-      backgroundColor: LumaColors.darkSurface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 160),
@@ -341,34 +345,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ] else ...[
               // ONLINE MODE
               if (_recentlyPlayed.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text('Baru saja didengar',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 168,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _recentlyPlayed.length,
-                    itemBuilder: (context, i) => _HorizontalCard(_recentlyPlayed[i], onTap: () {
-                      ref.read(playerProvider.notifier).play(_recentlyPlayed, i);
-                    }),
+                const SizedBox(height: 12),
+                
+                // Hero card for the first recently played
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _HeroCard(_recentlyPlayed.first, onTap: () {
+                    ref.read(playerProvider.notifier).play(_recentlyPlayed, 0);
+                  }),
+                ),
+                const SizedBox(height: 16),
+                
+                if (_recentlyPlayed.length > 1)
+                  SizedBox(
+                    height: 150,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _recentlyPlayed.length - 1,
+                      itemBuilder: (context, i) => _HorizontalCard(_recentlyPlayed[i + 1], onTap: () {
+                        ref.read(playerProvider.notifier).play(_recentlyPlayed, i + 1);
+                      }),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 32),
               ],
 
               if (_likedSongs.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Text('Lagu Disukai',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
                 ),
                 SizedBox(
-                  height: 168,
+                  height: 150,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -382,10 +397,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
 
               if (_artists.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Text('Artis untukmu',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
                 ),
                 SizedBox(
                   height: 128,
@@ -408,11 +423,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 40,
-                                backgroundColor: LumaColors.darkSurface,
+                                backgroundColor: Theme.of(context).colorScheme.surface,
                                 child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: Theme.of(context).textTheme.bodyMedium?.color,
                                     fontSize: 28,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -424,8 +439,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodyMedium?.color,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -448,11 +463,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     Text(
                       'Lagu $_selectedGenre',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
+                        letterSpacing: -0.5,
                       ),
                     ),
                     if (_recommendedLoading)
@@ -490,9 +505,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'Belum ada lagu untuk kategori ini',
-                          style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
+                          style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 14),
                         ),
                         const SizedBox(height: 12),
                         TextButton(
@@ -522,33 +537,97 @@ class _HorizontalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Container(
-        width: 120,
-        margin: const EdgeInsets.only(right: 12),
+        width: 104,
+        margin: const EdgeInsets.only(right: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(8),
               child: Image.network(
                 item.thumbnailUrl,
-                width: 120, height: 120, fit: BoxFit.cover,
+                width: 104, height: 104, fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  width: 120, height: 120, color: LumaColors.darkSurface,
-                  child: const Icon(Icons.music_note, color: Colors.white24, size: 32),
+                  width: 104, height: 104, color: Theme.of(context).colorScheme.surface,
+                  child: Icon(Icons.music_note, color: Theme.of(context).dividerColor, size: 32),
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(item.title,
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13, fontWeight: FontWeight.w600),
               maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 2),
             Text(item.author,
-              style: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 11),
+              style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 11),
               maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Hero card
+class _HeroCard extends StatelessWidget {
+  const _HeroCard(this.item, {required this.onTap});
+  final MusicItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          image: DecorationImage(
+            image: NetworkImage(item.thumbnailUrl),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.5), BlendMode.darken),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                item.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.play_circle_fill_rounded, color: LumaColors.accent, size: 20),
+                  const SizedBox(width: 6),
+                  Text(
+                    item.author,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
