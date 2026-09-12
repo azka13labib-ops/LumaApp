@@ -13,17 +13,21 @@ class LumaListSkeleton extends StatelessWidget {
   final int count;
   final bool showTrailing;
 
-  static const _base = Color(0xFF1E1E1E);
-  static const _highlight = Color(0xFF2E2E2E);
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final baseColor = isDark ? const Color(0xFF1E1E1E) : Colors.grey[300]!;
+    final highlightColor = isDark ? const Color(0xFF2E2E2E) : Colors.grey[100]!;
+    final placeholderColor = isDark ? Colors.white : Colors.black;
+
     return Skeletonizer(
       enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: _base,
-        highlightColor: _highlight,
-        duration: Duration(milliseconds: 1200),
+      effect: ShimmerEffect(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        duration: const Duration(milliseconds: 1200),
       ),
       child: ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
@@ -34,17 +38,17 @@ class LumaListSkeleton extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: _base,
+              color: baseColor,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
-          title: Container(height: 13, width: 180, color: Colors.white),
+          title: Container(height: 13, width: 180, color: placeholderColor),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Container(height: 11, width: 100, color: Colors.white),
+            child: Container(height: 11, width: 100, color: placeholderColor),
           ),
           trailing: showTrailing
-              ? Container(width: 28, height: 28, color: Colors.white)
+              ? Container(width: 28, height: 28, color: placeholderColor)
               : null,
         ),
       ),
