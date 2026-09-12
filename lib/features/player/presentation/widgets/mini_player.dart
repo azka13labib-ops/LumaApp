@@ -16,7 +16,7 @@ class MiniPlayer extends ConsumerWidget {
     final item = ps.current!;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: GestureDetector(
         onHorizontalDragEnd: (details) {
           final vx = details.primaryVelocity ?? 0;
@@ -36,30 +36,38 @@ class MiniPlayer extends ConsumerWidget {
               position:
                   Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
                       .animate(CurvedAnimation(
-                          parent: anim, curve: Curves.easeOut)),
+                          parent: anim, curve: Curves.easeOutQuart)),
               child: child,
             ),
           ),
         ),
         child: Container(
-          height: 64,
+          height: 68,
           decoration: BoxDecoration(
-            color: LumaColors.darkSurface,
-            borderRadius: BorderRadius.circular(8),
+            color: LumaColors.darkSurfaceElevated,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     children: [
                       // Artwork with Hero animation
                       Hero(
                         tag: 'player_artwork_${item.id}',
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                           child: Image.network(
                             item.thumbnailUrl,
                             width: 44,
@@ -75,7 +83,7 @@ class MiniPlayer extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       // Title + artist
                       Expanded(
                         child: Column(

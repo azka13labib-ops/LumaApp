@@ -29,11 +29,11 @@ class TrackRow extends ConsumerWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(6),
               child: Image.network(
                 item.thumbnailUrl,
                 width: 48,
@@ -46,19 +46,19 @@ class TrackRow extends ConsumerWidget {
                     child: const Icon(Icons.music_note, color: Colors.white30, size: 20)),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.title,
                       style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w500, fontSize: 14),
+                          color: LumaColors.darkTextPrimary, fontWeight: FontWeight.w600, fontSize: 15),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(item.author,
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      style: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                 ],
