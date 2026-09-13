@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,6 +8,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
+import '../../../../core/widgets/interactive_scale_button.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
 import '../../../../features/player/presentation/widgets/track_row.dart';
@@ -175,7 +177,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
     
     final theme = Theme.of(context);
-    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -187,21 +190,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1A3A1A),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF18181B) : LumaColors.lightSurface,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
+                      width: 1,
+                    ),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.wifi_off_rounded, color: Color(0xFF88FF88), size: 18),
+                    Icon(Icons.wifi_off_rounded,
+                        color: isDark ? Colors.white70 : LumaColors.lightTextPrimary,
+                        size: 18),
                     const SizedBox(width: 8),
                     Text(
                       'Mode Offline: ${_cachedTracks.length} lagu tersedia',
-                      style: const TextStyle(color: Color(0xFF88FF88), fontSize: 12, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          color: isDark ? Colors.white70 : LumaColors.lightTextPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -227,10 +237,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         MaterialPageRoute(builder: (_) => const ProfileScreen())),
                     child: CircleAvatar(
                       radius: 18,
-                      backgroundColor: LumaColors.accent.withValues(alpha: 0.25),
+                      backgroundColor: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
                       child: Text(
                         initial,
-                        style: const TextStyle(color: LumaColors.accent, fontSize: 15, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -252,18 +262,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     return ChoiceChip(
                       label: Text(g),
                       selected: isSelected,
-                      selectedColor: LumaColors.accent,
+                      selectedColor: isDark ? Colors.white : const Color(0xFF18181B),
                       backgroundColor: theme.colorScheme.surface,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.black : textPrimary,
+                        color: isSelected
+                            ? (isDark ? Colors.black : Colors.white)
+                            : textPrimary,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                         fontSize: 13,
                       ),
                       side: BorderSide(
-                        color: isSelected ? LumaColors.accent : theme.dividerColor,
+                        color: isSelected
+                            ? (isDark ? Colors.white : const Color(0xFF18181B))
+                            : theme.dividerColor,
                       ),
                       onSelected: (val) {
                         if (val && _selectedGenre != g) {
+                          HapticFeedback.selectionClick();
                           setState(() => _selectedGenre = g);
                           _fetchRecommended(g);
                         }
@@ -282,19 +297,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+    final textSecondary = isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary;
+
     if (_loading) return _HomeSkeleton();
 
     if (_error != null && _cachedTracks.isEmpty && _recentlyPlayed.isEmpty && _likedSongs.isEmpty && _recommendedSongs.isEmpty) {
       return Center(child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.headphones_rounded, color: Colors.white12, size: 64),
+          Icon(Icons.headphones_rounded,
+              color: isDark ? Colors.white12 : Colors.black12, size: 64),
           const SizedBox(height: 16),
-          Text(_error!, style: const TextStyle(color: Colors.white70, fontSize: 15), textAlign: TextAlign.center),
+          Text(_error!, style: TextStyle(color: textSecondary, fontSize: 15), textAlign: TextAlign.center),
           const SizedBox(height: 16),
           TextButton(
             onPressed: _fetchData,
-            child: const Text('Coba lagi', style: TextStyle(color: LumaColors.accent)),
+            child: Text('Coba lagi', style: TextStyle(color: theme.colorScheme.primary)),
           ),
         ]),
       ));
@@ -302,7 +323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return RefreshIndicator(
       onRefresh: _fetchData,
-      color: LumaColors.accent,
+      color: theme.colorScheme.primary,
       backgroundColor: Theme.of(context).colorScheme.surface,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -313,10 +334,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // If offline, display the cached tracks as a vertical list (primary content)
             if (_isOffline) ...[
               if (_cachedTracks.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: Text('Tersimpan Offline',
-                    style: TextStyle(color: LumaColors.accent, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+                    style: TextStyle(color: textPrimary, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
                 ),
                 ListView.builder(
                   shrinkWrap: true,
@@ -328,16 +349,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ] else
-                const Padding(
-                  padding: EdgeInsets.all(32.0),
+                Padding(
+                  padding: const EdgeInsets.all(32.0),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.wifi_off_rounded, color: Colors.white12, size: 64),
-                        SizedBox(height: 16),
+                        Icon(Icons.wifi_off_rounded,
+                            color: isDark ? Colors.white12 : Colors.black12, size: 64),
+                        const SizedBox(height: 16),
                         Text('Kamu sedang offline dan belum ada lagu yang diunduh.',
-                          style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 15), textAlign: TextAlign.center),
+                          style: TextStyle(color: textSecondary, fontSize: 15), textAlign: TextAlign.center),
                       ],
                     ),
                   ),
@@ -471,12 +493,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     if (_recommendedLoading)
-                      const SizedBox(
+                      SizedBox(
                         width: 14,
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: LumaColors.accent,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                   ],
@@ -512,7 +534,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const SizedBox(height: 12),
                         TextButton(
                           onPressed: () => _fetchRecommended(_selectedGenre),
-                          child: const Text('Muat Ulang', style: TextStyle(color: LumaColors.accent)),
+                          child: Text('Muat Ulang', style: TextStyle(color: theme.colorScheme.primary)),
                         ),
                       ],
                     ),
@@ -536,7 +558,8 @@ class _HorizontalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return InteractiveScaleButton(
+      pressedScale: 0.95,
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Container(
@@ -582,7 +605,8 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return InteractiveScaleButton(
+      pressedScale: 0.97,
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
@@ -615,7 +639,7 @@ class _HeroCard extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.play_circle_fill_rounded, color: LumaColors.accent, size: 20),
+                  const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 20),
                   const SizedBox(width: 6),
                   Text(
                     item.author,
@@ -637,18 +661,22 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Skeleton loading for the home screen
-// ---------------------------------------------------------------------------
 class _HomeSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF1E1E1E) : Colors.grey[300]!;
+    final highlightColor = isDark ? const Color(0xFF2E2E2E) : Colors.grey[100]!;
+    final placeholderColor = isDark ? Colors.white : Colors.black;
+    final surfaceColor = isDark ? LumaColors.darkSurface : LumaColors.lightSurface;
+    final textColor = isDark ? Colors.white : LumaColors.lightTextPrimary;
+
     return Skeletonizer(
       enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: Color(0xFF1E1E1E),
-        highlightColor: Color(0xFF2E2E2E),
-        duration: Duration(milliseconds: 1200),
+      effect: ShimmerEffect(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        duration: const Duration(milliseconds: 1200),
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 160),
@@ -657,10 +685,10 @@ class _HomeSkeleton extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Section 1 header
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text('Baru saja didengar',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w700)),
             ),
             // Horizontal cards row
             SizedBox(
@@ -678,12 +706,12 @@ class _HomeSkeleton extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: Container(width: 120, height: 120, color: LumaColors.darkSurface),
+                        child: Container(width: 120, height: 120, color: surfaceColor),
                       ),
                       const SizedBox(height: 6),
-                      Container(height: 11, width: 90, color: Colors.white),
+                      Container(height: 11, width: 90, color: placeholderColor),
                       const SizedBox(height: 4),
-                      Container(height: 10, width: 60, color: Colors.white),
+                      Container(height: 10, width: 60, color: placeholderColor),
                     ],
                   ),
                 ),
@@ -691,10 +719,10 @@ class _HomeSkeleton extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             // Section 2 header
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Text('Lagu Disukai',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w700)),
             ),
             SizedBox(
               height: 168,
@@ -711,12 +739,12 @@ class _HomeSkeleton extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: Container(width: 120, height: 120, color: LumaColors.darkSurface),
+                        child: Container(width: 120, height: 120, color: surfaceColor),
                       ),
                       const SizedBox(height: 6),
-                      Container(height: 11, width: 90, color: Colors.white),
+                      Container(height: 11, width: 90, color: placeholderColor),
                       const SizedBox(height: 4),
-                      Container(height: 10, width: 60, color: Colors.white),
+                      Container(height: 10, width: 60, color: placeholderColor),
                     ],
                   ),
                 ),
@@ -724,10 +752,10 @@ class _HomeSkeleton extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             // Section 3 – artist circles
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Text('Artis untukmu',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w700)),
             ),
             SizedBox(
               height: 128,
@@ -741,9 +769,9 @@ class _HomeSkeleton extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 14),
                   child: Column(
                     children: [
-                      const CircleAvatar(radius: 40, backgroundColor: LumaColors.darkSurface),
+                      CircleAvatar(radius: 40, backgroundColor: surfaceColor),
                       const SizedBox(height: 8),
-                      Container(height: 11, width: 64, color: Colors.white),
+                      Container(height: 11, width: 64, color: placeholderColor),
                     ],
                   ),
                 ),
