@@ -126,8 +126,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     setState(() { _isLoading = true; _error = null; });
     try {
       if (kIsWeb) {
+        final origin = Uri.base.origin;
         final res = await Supabase.instance.client.auth.getOAuthSignInUrl(
           provider: provider,
+          redirectTo: '$origin/',
         );
         await launchUrl(
           Uri.parse(res.url),
