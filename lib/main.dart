@@ -14,6 +14,7 @@ import 'package:luma_app/features/library/presentation/screens/library_screen.da
 import 'package:luma_app/features/premium/presentation/screens/premium_screen.dart';
 import 'package:luma_app/features/player/presentation/widgets/mini_player.dart';
 import 'core/services/settings_service.dart';
+import 'core/widgets/luma_animated_nav_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -110,24 +111,9 @@ class _MainShellState extends State<MainShell> {
           children: [
             // Mini player sits on top of the bottom nav: never clips list items
             const MiniPlayer(),
-            BottomNavigationBar(
+            LumaAnimatedNavBar(
               currentIndex: _currentIndex,
               onTap: (index) => setState(() => _currentIndex = index),
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              selectedItemColor: Theme.of(context).brightness == Brightness.dark 
-                  ? Colors.white 
-                  : const Color(0xFF18181B),
-              unselectedItemColor: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ?? Colors.grey,
-              selectedFontSize: 11,
-              unselectedFontSize: 11,
-              elevation: 0,
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Beranda'),
-                BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Cari'),
-                BottomNavigationBarItem(icon: Icon(Icons.library_music_rounded), label: 'Koleksi'),
-                BottomNavigationBarItem(icon: Icon(Icons.workspace_premium_rounded), label: 'Premium'),
-              ],
             ),
           ],
         ),
