@@ -11,8 +11,9 @@ import 'package:google_fonts/google_fonts.dart';
 class LumaColors {
   LumaColors._();
 
-  // Accent: one deliberate accent, used sparingly
-  static const Color accent = Color(0xFFB8FF22); // Luma Lime
+  // Accent: Monochrome primary accent
+  // In the grey-white theme, Obsidian Charcoal (#18181B) serves as the high-contrast focal accent.
+  static const Color accent = Color(0xFF18181B); // Obsidian Zinc-900
 
   // Dark Mode palette
   static const Color darkBg              = Color(0xFF000000);
@@ -22,13 +23,15 @@ class LumaColors {
   static const Color darkTextPrimary    = Color(0xFFFFFFFF);
   static const Color darkTextSecondary  = Color(0xFFA1A1AA);
 
-  // Light Mode palette
-  static const Color lightBg              = Color(0xFFFFFFFF);
+  // Light Mode palette (Grey-White Minimalist)
+  static const Color lightBg              = Color(0xFFFAFAFA); // Soft pure zinc backdrop
   static const Color lightSurface        = Color(0xFFF4F4F5); // Zinc-100
-  static const Color lightSurfaceElevated = Color(0xFFFFFFFF); // White card
+  static const Color lightSurfaceElevated = Color(0xFFFFFFFF); // Pure white elevated card
   static const Color lightDivider        = Color(0xFFE4E4E7); // Zinc-200
+  static const Color lightBorder         = Color(0xFFD4D4D8); // Zinc-300
   static const Color lightTextPrimary    = Color(0xFF09090B); // Zinc-950
   static const Color lightTextSecondary  = Color(0xFF71717A); // Zinc-500
+  static const Color lightTextMuted      = Color(0xFFA1A1AA); // Zinc-400
 }
 
 class AppTheme {
@@ -60,8 +63,8 @@ class AppTheme {
       useMaterial3: true,
       scaffoldBackgroundColor: bgColor,
       colorScheme: ColorScheme.dark(
-        primary: LumaColors.accent,
-        secondary: LumaColors.accent,
+        primary: Colors.white,
+        secondary: const Color(0xFFE4E4E7),
         surface: surfaceColor,
         onPrimary: Colors.black,
         onSecondary: Colors.black,
@@ -115,7 +118,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: LumaColors.accent,
+          backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -138,7 +141,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: LumaColors.accent, width: 1.5),
+          borderSide: const BorderSide(color: Colors.white, width: 1.5),
         ),
         hintStyle: GoogleFonts.plusJakartaSans(
           color: LumaColors.darkTextSecondary,
@@ -151,16 +154,16 @@ class AppTheme {
         thumbColor: WidgetStateProperty.resolveWith((states) =>
           states.contains(WidgetState.selected) ? Colors.black : LumaColors.darkTextSecondary),
         trackColor: WidgetStateProperty.resolveWith((states) =>
-          states.contains(WidgetState.selected) ? LumaColors.accent : dividerColor),
+          states.contains(WidgetState.selected) ? Colors.white : dividerColor),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
       ),
       sliderTheme: SliderThemeData(
-        activeTrackColor: LumaColors.accent,
+        activeTrackColor: Colors.white,
         inactiveTrackColor: dividerColor,
-        thumbColor: LumaColors.accent,
+        thumbColor: Colors.white,
         trackHeight: 4,
-        thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
-        overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: surfaceElevatedColor,
@@ -184,11 +187,11 @@ class AppTheme {
       useMaterial3: true,
       scaffoldBackgroundColor: LumaColors.lightBg,
       colorScheme: const ColorScheme.light(
-        primary: LumaColors.accent,
-        secondary: LumaColors.accent,
+        primary: Color(0xFF18181B), // Obsidian Zinc-900
+        secondary: Color(0xFF27272A), // Zinc-800
         surface: LumaColors.lightSurface,
-        onPrimary: Colors.black,
-        onSecondary: Colors.black,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
         onSurface: LumaColors.lightTextPrimary,
       ),
       textTheme: GoogleFonts.plusJakartaSansTextTheme(baseTextTheme).copyWith(
@@ -239,8 +242,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: LumaColors.accent,
-          foregroundColor: Colors.black,
+          backgroundColor: const Color(0xFF18181B),
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -262,7 +265,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: LumaColors.accent, width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF18181B), width: 1.5),
         ),
         hintStyle: GoogleFonts.plusJakartaSans(
           color: LumaColors.lightTextSecondary,
@@ -273,21 +276,21 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) =>
-          states.contains(WidgetState.selected) ? Colors.black : LumaColors.lightTextSecondary),
+          states.contains(WidgetState.selected) ? Colors.white : LumaColors.lightTextSecondary),
         trackColor: WidgetStateProperty.resolveWith((states) =>
-          states.contains(WidgetState.selected) ? LumaColors.accent : LumaColors.lightDivider),
+          states.contains(WidgetState.selected) ? const Color(0xFF18181B) : LumaColors.lightDivider),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
       ),
       sliderTheme: const SliderThemeData(
-        activeTrackColor: LumaColors.accent,
+        activeTrackColor: Color(0xFF18181B),
         inactiveTrackColor: LumaColors.lightDivider,
-        thumbColor: LumaColors.accent,
+        thumbColor: Color(0xFF18181B),
         trackHeight: 4,
         thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
         overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: LumaColors.lightTextPrimary,
+        backgroundColor: const Color(0xFF18181B),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         showCloseIcon: true,
