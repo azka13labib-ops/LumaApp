@@ -60,8 +60,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF1D4ED8);
-    const primaryBlueLight = Color(0xFF2563EB);
+    const primaryObsidian = Color(0xFF09090B);
+    const primaryCharcoal = Color(0xFF27272A);
     final forcedTheme = AppTheme.light;
 
     return Theme(
@@ -77,7 +77,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 constraints: BoxConstraints(maxWidth: isWide ? 420 : double.infinity),
                 child: Stack(
                   children: [
-                    // 1. Background Gradient (Exact match from the reference photo)
+                    // 1. Background Gradient (Monochrome Charcoal to Pearl White)
                     Positioned.fill(
                       child: Container(
                         decoration: const BoxDecoration(
@@ -85,17 +85,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Color(0xFF1239B8), // Deep royal cobalt blue at top
-                              Color(0xFF1A4CE5), // Vibrant electric blue
-                              Color(0xFF2856EA), // Glowing aura
-                              Color(0xFF456EEF), // Softening transition
-                              Color(0xFF7597F8), // Diffuse light blue
-                              Color(0xFFBFD2FD), // Feathering pastel
-                              Color(0xFFF1F5FE), // Subtle blue mist
+                              Color(0xFF18181B), // Deep obsidian zinc at top
+                              Color(0xFF27272A), // Charcoal zinc-800
+                              Color(0xFF3F3F46), // Muted zinc-700
+                              Color(0xFF52525B), // Softening transition
+                              Color(0xFF8B8B94), // Silver-grey mist
+                              Color(0xFFD4D4D8), // Feathering pearl pastel
+                              Color(0xFFF4F4F5), // Subtle silver mist
                               Colors.white,      // Pure white start
                               Colors.white,      // Solid pure white bottom
                             ],
-                            stops: [0.0, 0.22, 0.36, 0.46, 0.56, 0.65, 0.72, 0.78, 1.0],
+                            stops: [0.0, 0.20, 0.35, 0.46, 0.56, 0.66, 0.73, 0.80, 1.0],
                           ),
                         ),
                       ),
@@ -118,8 +118,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    const Color(0xFF60A5FA).withValues(alpha: 0.28),
-                                    const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                                    const Color(0xFF71717A).withValues(alpha: 0.22),
+                                    const Color(0xFF52525B).withValues(alpha: 0.08),
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.45, 1.0],
@@ -228,7 +228,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                   ),
                                   const SizedBox(height: 32),
 
-                                  // Button 1: Sign In (Royal Blue Gradient Pill)
+                                  // Button 1: Sign In (Obsidian Charcoal Gradient Pill)
                                   _buildStaggered(
                                     start: 0.48,
                                     child: _PillButton(
@@ -240,13 +240,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                         );
                                       },
                                       isPrimary: true,
-                                      colors: const [primaryBlueLight, primaryBlue],
+                                      colors: const [primaryCharcoal, primaryObsidian],
                                       label: 'Sign In',
                                     ),
                                   ),
                                   const SizedBox(height: 14),
 
-                                  // Button 2: Create Account (White with Royal Blue Outline)
+                                  // Button 2: Create Account (White with Charcoal Outline)
                                   _buildStaggered(
                                     start: 0.62,
                                     child: _PillButton(
@@ -321,7 +321,7 @@ class _PillButtonState extends State<_PillButton> with SingleTickerProviderState
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF1D4ED8);
+    const primaryObsidian = Color(0xFF09090B);
 
     return GestureDetector(
       onTapDown: (_) => _scaleCtrl.forward(),
@@ -346,11 +346,11 @@ class _PillButtonState extends State<_PillButton> with SingleTickerProviderState
             borderRadius: BorderRadius.circular(30),
             border: widget.isPrimary
                 ? null
-                : Border.all(color: const Color(0xFF2563EB), width: 1.5),
+                : Border.all(color: primaryObsidian, width: 1.5),
             boxShadow: widget.isPrimary
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF1D4ED8).withValues(alpha: 0.35),
+                      color: const Color(0xFF09090B).withValues(alpha: 0.25),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -361,7 +361,7 @@ class _PillButtonState extends State<_PillButton> with SingleTickerProviderState
           child: Text(
             widget.label,
             style: TextStyle(
-              color: widget.isPrimary ? Colors.white : primaryBlue,
+              color: widget.isPrimary ? Colors.white : primaryObsidian,
               fontSize: 16,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.2,
