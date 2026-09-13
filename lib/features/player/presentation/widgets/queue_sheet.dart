@@ -100,7 +100,7 @@ class QueueSheet extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: isCurrent ? LumaColors.accent : Colors.white,
+                              color: isCurrent ? Colors.white : Colors.white60,
                               fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                               fontSize: 14,
                             ),
