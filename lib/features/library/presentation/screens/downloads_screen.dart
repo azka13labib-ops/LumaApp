@@ -59,26 +59,31 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+    final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
+
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Unduhan',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
           TextButton.icon(
             onPressed: _playAll,
-            icon: const Icon(Icons.play_arrow_rounded, size: 18, color: Colors.white),
-            label: const Text('Putar', style: TextStyle(color: Colors.white, fontSize: 13)),
+            icon: Icon(Icons.play_arrow_rounded, size: 18, color: theme.colorScheme.primary),
+            label: Text('Putar', style: TextStyle(color: theme.colorScheme.primary, fontSize: 13)),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor: theme.colorScheme.primary,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           ),
@@ -87,18 +92,19 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
       body: _loading
           ? const LumaListSkeleton(count: 5, showTrailing: true)
           : _items.isEmpty
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(32),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.download_outlined, color: Colors.white24, size: 56),
-                        SizedBox(height: 16),
+                        Icon(Icons.download_outlined,
+                            color: isDark ? Colors.white24 : Colors.black26, size: 56),
+                        const SizedBox(height: 16),
                         Text(
                           'Belum ada lagu tersimpan.\nUnduh dari layar pemutar agar bisa diputar offline.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14, height: 1.4),
+                          style: TextStyle(color: textSecondary, fontSize: 14, height: 1.4),
                         ),
                       ],
                     ),
@@ -106,8 +112,8 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
-                  color: LumaColors.accent,
-                  backgroundColor: LumaColors.darkSurface,
+                  color: theme.colorScheme.primary,
+                  backgroundColor: theme.colorScheme.surface,
                   child: Column(
                     children: [
                       // Header stats + Play All / Shuffle
@@ -117,16 +123,16 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                           children: [
                             Text(
                               '${_items.length} lagu · ${OfflineCacheService.formatBytes(_totalSizeBytes)}',
-                              style: const TextStyle(color: Colors.white54, fontSize: 12),
+                              style: TextStyle(color: textSecondary, fontSize: 12),
                             ),
                             const Spacer(),
-                            _playAllButton(),
+                            _playAllButton(theme),
                             const SizedBox(width: 8),
-                            _shuffleButton(),
+                            _shuffleButton(theme, isDark, textPrimary),
                           ],
                         ),
                       ),
-                      const Divider(height: 1, color: Color(0xFF2A2A2A)),
+                      Divider(height: 1, color: theme.dividerColor),
                       Expanded(
                         child: ListView.builder(
                           padding: const EdgeInsets.only(bottom: 32),
@@ -155,13 +161,14 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                                     placeholder: (context, url) => Container(
                                       width: 48,
                                       height: 48,
-                                      color: LumaColors.darkSurface,
+                                      color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
                                     ),
                                     errorWidget: (context, url, error) => Container(
                                       width: 48,
                                       height: 48,
-                                      color: LumaColors.darkSurface,
-                                      child: const Icon(Icons.music_note, color: Colors.white38),
+                                      color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
+                                      child: Icon(Icons.music_note,
+                                          color: isDark ? Colors.white38 : LumaColors.lightTextMuted),
                                     ),
                                   ),
                                 ),
@@ -169,7 +176,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                                   item.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                                  style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
                                 ),
                                 subtitle: Row(
                                   children: [
@@ -177,19 +184,19 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                                       item.author,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
+                                      style: TextStyle(color: textSecondary, fontSize: 12),
                                     ),
                                     if (item.fileSizeBytes != null) ...[
                                       const SizedBox(width: 8),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                                         decoration: BoxDecoration(
-                                          color: LumaColors.darkSurface,
+                                          color: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: Text(
                                           OfflineCacheService.formatBytes(item.fileSizeBytes!),
-                                          style: const TextStyle(color: Colors.white38, fontSize: 10),
+                                          style: TextStyle(color: textSecondary, fontSize: 10),
                                         ),
                                       ),
                                     ],
@@ -199,10 +206,11 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (item.fileSizeBytes != null && item.fileSizeBytes! > 0)
-                                      Icon(Icons.download_done_rounded, color: LumaColors.accent, size: 20),
+                                      Icon(Icons.download_done_rounded, color: theme.colorScheme.primary, size: 20),
                                     const SizedBox(width: 4),
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.white38, size: 20),
+                                      icon: Icon(Icons.delete_outline_rounded,
+                                          color: isDark ? Colors.white38 : LumaColors.lightTextMuted, size: 20),
                                       onPressed: () => _remove(item),
                                     ),
                                   ],
@@ -218,42 +226,44 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     );
   }
 
-  Widget _playAllButton() {
+  Widget _playAllButton(ThemeData theme) {
     return GestureDetector(
       onTap: _playAll,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: LumaColors.accent,
+          color: theme.colorScheme.primary,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.play_arrow_rounded, color: Colors.white, size: 16),
-            SizedBox(width: 4),
-            Text('Putar Semua', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+            Icon(Icons.play_arrow_rounded, color: theme.colorScheme.onPrimary, size: 16),
+            const SizedBox(width: 4),
+            Text('Putar Semua',
+                style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
     );
   }
 
-  Widget _shuffleButton() {
+  Widget _shuffleButton(ThemeData theme, bool isDark, Color textPrimary) {
     return GestureDetector(
       onTap: _shuffleAll,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: LumaColors.darkSurface,
+          color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: theme.dividerColor),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.shuffle_rounded, color: Colors.white54, size: 16),
-            SizedBox(width: 4),
-            Text('Acak', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500)),
+            Icon(Icons.shuffle_rounded, color: textPrimary, size: 16),
+            const SizedBox(width: 4),
+            Text('Acak', style: TextStyle(color: textPrimary, fontSize: 12, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -268,7 +278,7 @@ SnackBar _modernSnack(String msg, {bool isError = false}) {
       children: [
         Icon(
           isError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
-          color: isError ? Colors.red.shade300 : LumaColors.accent,
+          color: isError ? Colors.red.shade300 : Colors.white,
           size: 20,
         ),
         const SizedBox(width: 12),
@@ -277,7 +287,7 @@ SnackBar _modernSnack(String msg, {bool isError = false}) {
         ),
       ],
     ),
-    backgroundColor: LumaColors.darkSurface,
+    backgroundColor: const Color(0xFF18181B),
     behavior: SnackBarBehavior.floating,
     duration: const Duration(seconds: 2),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

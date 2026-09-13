@@ -99,8 +99,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
     
     final theme = Theme.of(context);
-    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
-    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+    final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
     final surfaceColor = theme.colorScheme.surface;
 
     return Scaffold(
@@ -119,7 +120,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         MaterialPageRoute(builder: (_) => const SettingsScreen())),
                     child: CircleAvatar(
                       radius: 16,
-                      backgroundColor: LumaColors.accent.withValues(alpha: 0.3),
+                      backgroundColor: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
                       child: Text(initial,
                           style: TextStyle(
                               color: textPrimary,
@@ -189,7 +190,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: LumaColors.accent, width: 1.5),
+                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                           ),
                           contentPadding: const EdgeInsets.symmetric(vertical: 0),
                         ),
@@ -216,19 +217,25 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? LumaColors.accent : Colors.transparent,
+                            color: selected
+                                ? (isDark ? Colors.white : const Color(0xFF18181B))
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: selected ? LumaColors.accent : theme.dividerColor,
+                              color: selected
+                                  ? (isDark ? Colors.white : const Color(0xFF18181B))
+                                  : theme.dividerColor,
                               width: 1,
                             ),
                           ),
                           child: Text(f,
                               style: TextStyle(
-                                  color: selected ? Colors.black : textPrimary,
+                                  color: selected
+                                      ? (isDark ? Colors.black : Colors.white)
+                                      : textPrimary,
                                   fontSize: 13,
                                   letterSpacing: -0.2,
-                                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500)),
+                                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
                         ),
                       ),
                     );
@@ -245,7 +252,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   ? const LumaListSkeleton(count: 6)
                   : RefreshIndicator(
                       onRefresh: _fetchAll,
-                      color: LumaColors.accent,
+                      color: theme.colorScheme.primary,
                       backgroundColor: surfaceColor,
                       child: _buildList(),
                     ),
@@ -334,8 +341,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: LumaColors.accent,
-                    foregroundColor: Colors.black,
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -416,7 +423,7 @@ class _LikedSongsRow extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF450AF5), Color(0xFF8DC9CF)],
+            colors: [Color(0xFF18181B), Color(0xFF3F3F46)],
           ),
           borderRadius: BorderRadius.circular(6),
         ),

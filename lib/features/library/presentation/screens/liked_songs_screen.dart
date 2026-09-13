@@ -12,15 +12,19 @@ class LikedSongsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textSecondary = isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary;
+
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           // ── Header ──
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
-            backgroundColor: LumaColors.accent,
+            backgroundColor: const Color(0xFF18181B),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
               onPressed: () => Navigator.pop(context),
@@ -31,7 +35,10 @@ class LikedSongsScreen extends ConsumerWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [LumaColors.accent, Color(0xFF1E3A8A)],
+                    colors: [
+                      Color(0xFF18181B),
+                      Color(0xFF27272A),
+                    ],
                   ),
                 ),
                 child: Column(
@@ -68,18 +75,21 @@ class LikedSongsScreen extends ConsumerWidget {
 
           // ── Track List ──
           if (songs.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.favorite_border_rounded, color: Colors.white12, size: 56),
-                    SizedBox(height: 16),
+                    Icon(Icons.favorite_border_rounded,
+                        color: isDark ? Colors.white12 : Colors.black12, size: 56),
+                    const SizedBox(height: 16),
                     Text('Belum ada lagu yang disukai',
-                        style: TextStyle(color: Colors.white54, fontSize: 14)),
-                    SizedBox(height: 8),
+                        style: TextStyle(color: textSecondary, fontSize: 14)),
+                    const SizedBox(height: 8),
                     Text('Sukai lagu dari hasil pencarian',
-                        style: TextStyle(color: Colors.white30, fontSize: 12)),
+                        style: TextStyle(
+                            color: isDark ? Colors.white30 : LumaColors.lightTextMuted,
+                            fontSize: 12)),
                   ],
                 ),
               ),

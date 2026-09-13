@@ -51,23 +51,28 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 
   Future<void> _deletePlaylist() async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+    final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: LumaColors.darkSurface,
-        title: const Text('Hapus Playlist?',
-            style: TextStyle(color: Colors.white)),
+        backgroundColor: isDark ? LumaColors.darkSurface : Colors.white,
+        title: Text('Hapus Playlist?',
+            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
         content: Text(
           'Playlist "${widget.playlist['name']}" akan dihapus permanen.',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: textSecondary),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal', style: TextStyle(color: Colors.white54))),
+              child: Text('Batal', style: TextStyle(color: textSecondary))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Hapus', style: TextStyle(color: Colors.red))),
+              child: Text('Hapus', style: TextStyle(color: Colors.red.shade400))),
         ],
       ),
     );
@@ -83,23 +88,27 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final name = widget.playlist['name'] ?? 'Playlist';
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+    final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
 
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           // ── Header ──
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
-            backgroundColor: LumaColors.darkBg,
+            backgroundColor: theme.scaffoldBackgroundColor,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, color: Colors.white54),
+                icon: Icon(Icons.delete_outline_rounded, color: textSecondary),
                 onPressed: _deletePlaylist,
               ),
             ],
@@ -110,8 +119,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      LumaColors.accent.withValues(alpha: 0.5),
-                      LumaColors.darkBg,
+                      isDark
+                          ? const Color(0xFF27272A).withValues(alpha: 0.35)
+                          : const Color(0xFFE4E4E7).withValues(alpha: 0.5),
+                      theme.scaffoldBackgroundColor,
                     ],
                   ),
                 ),
@@ -123,21 +134,21 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: LumaColors.darkSurface,
+                        color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.queue_music_rounded,
-                          color: Colors.white38, size: 48),
+                      child: Icon(Icons.queue_music_rounded,
+                          color: isDark ? Colors.white38 : LumaColors.lightTextMuted, size: 48),
                     ),
                     const SizedBox(height: 12),
                     Text(name,
-                        style: const TextStyle(
-                            color: Colors.white,
+                        style: TextStyle(
+                            color: textPrimary,
                             fontSize: 20,
                             fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text('Playlist • Kamu',
-                        style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                        style: TextStyle(color: textSecondary, fontSize: 13)),
                   ],
                 ),
               ),
@@ -162,8 +173,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                 child: Text('${_songs.length} lagu',
-                    style:
-                        const TextStyle(color: Colors.white54, fontSize: 12)),
+                    style: TextStyle(color: textSecondary, fontSize: 12)),
               ),
             ),
 
@@ -173,21 +183,21 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               child: LumaListSkeleton(count: 7),
             )
           else if (_songs.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.playlist_add_rounded,
-                        color: Colors.white12, size: 56),
-                    SizedBox(height: 16),
+                        color: isDark ? Colors.white12 : Colors.black12, size: 56),
+                    const SizedBox(height: 16),
                     Text('Playlist masih kosong',
-                        style:
-                            TextStyle(color: Colors.white54, fontSize: 14)),
-                    SizedBox(height: 8),
+                        style: TextStyle(color: textSecondary, fontSize: 14)),
+                    const SizedBox(height: 8),
                     Text('Tambahkan lagu dari hasil pencarian',
-                        style:
-                            TextStyle(color: Colors.white30, fontSize: 12)),
+                        style: TextStyle(
+                            color: isDark ? Colors.white30 : LumaColors.lightTextMuted,
+                            fontSize: 12)),
                   ],
                 ),
               ),
@@ -204,8 +214,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                       onTap: () =>
                           ref.read(playerProvider.notifier).play(_songs, i),
                       trailing: IconButton(
-                        icon: const Icon(Icons.remove_circle_outline_rounded,
-                            color: Colors.white24, size: 20),
+                        icon: Icon(Icons.remove_circle_outline_rounded,
+                            color: isDark ? Colors.white24 : Colors.black26, size: 20),
                         onPressed: () async {
                           await _supabase
                               .from('playlist_items')

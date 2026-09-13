@@ -44,6 +44,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final settings = ref.watch(settingsProvider);
     
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
     final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
     final surfaceColor = theme.colorScheme.surface;
@@ -69,7 +70,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor: LumaColors.accent.withValues(alpha: 0.3),
+                  backgroundColor: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
                   child: Text(initial,
                       style: TextStyle(
                           color: textPrimary,
@@ -91,8 +92,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Container(
                           width: 8,
                           height: 8,
-                          decoration: const BoxDecoration(
-                            color: LumaColors.accent,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white70 : const Color(0xFF18181B),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -139,7 +140,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(color: textSecondary, fontSize: 12),
             ),
             value: settings.autoplay,
-            activeColor: LumaColors.accent,
             onChanged: (val) {
               ref.read(settingsProvider.notifier).setAutoplay(val);
             },
@@ -154,7 +154,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(color: textSecondary, fontSize: 12),
             ),
             value: settings.offlineOnly,
-            activeColor: LumaColors.accent,
             onChanged: (val) {
               ref.read(settingsProvider.notifier).setOfflineOnly(val);
             },
@@ -209,7 +208,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(color: textSecondary, fontSize: 12),
             ),
             value: settings.showNotificationControls,
-            activeColor: LumaColors.accent,
             onChanged: (val) {
               ref.read(settingsProvider.notifier).setShowNotificationControls(val);
             },
@@ -335,11 +333,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     isSelected
                         ? Icons.radio_button_checked_rounded
                         : Icons.radio_button_off_rounded,
-                    color: isSelected ? LumaColors.accent : textSecondary,
+                    color: isSelected ? theme.colorScheme.primary : textSecondary,
                   ),
                   title: Text(quality.label,
                       style: TextStyle(
-                          color: isSelected ? LumaColors.accent : textPrimary,
+                          color: isSelected ? theme.colorScheme.primary : textPrimary,
                           fontSize: 15,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w500)),
@@ -401,29 +399,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     color: textSecondary, fontSize: 14, height: 1.4),
               ),
               const SizedBox(height: 16),
-              ...ThemePreference.values.map((theme) {
-                final isSelected = theme == current;
+              ...ThemePreference.values.map((pref) {
+                final isSelected = pref == current;
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(
                     isSelected
                         ? Icons.radio_button_checked_rounded
                         : Icons.radio_button_off_rounded,
-                    color: isSelected ? LumaColors.accent : textSecondary,
+                    color: isSelected ? theme.colorScheme.primary : textSecondary,
                   ),
-                  title: Text(theme.label,
+                  title: Text(pref.label,
                       style: TextStyle(
-                          color: isSelected ? LumaColors.accent : textPrimary,
+                          color: isSelected ? theme.colorScheme.primary : textPrimary,
                           fontSize: 15,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w600)),
-                  subtitle: Text(theme.description,
+                  subtitle: Text(pref.description,
                       style: TextStyle(
                           color: textSecondary, fontSize: 12)),
                   onTap: () {
                     ref
                         .read(settingsProvider.notifier)
-                        .setThemePreference(theme);
+                        .setThemePreference(pref);
                     Navigator.pop(ctx);
                   },
                 );
@@ -616,9 +614,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 8),
             TextButton.icon(
               style: TextButton.styleFrom(padding: EdgeInsets.zero),
-              icon: const Icon(Icons.library_books_rounded, size: 16, color: LumaColors.accent),
-              label: const Text('Lisensi Sumber Terbuka',
-                  style: TextStyle(color: LumaColors.accent, fontSize: 13)),
+              icon: Icon(Icons.library_books_rounded, size: 16, color: theme.colorScheme.primary),
+              label: Text('Lisensi Sumber Terbuka',
+                  style: TextStyle(color: theme.colorScheme.primary, fontSize: 13)),
               onPressed: () {
                 Navigator.pop(ctx);
                 showLicensePage(
@@ -633,8 +631,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Tutup',
-                  style: TextStyle(color: LumaColors.accent))),
+              child: Text('Tutup',
+                  style: TextStyle(color: theme.colorScheme.primary))),
         ],
       ),
     );

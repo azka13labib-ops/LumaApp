@@ -67,21 +67,25 @@ class _RecentlyPlayedScreenState extends ConsumerState<RecentlyPlayedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: LumaColors.darkBg,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Riwayat Didengar',
           style: TextStyle(
-            color: Colors.white,
+            color: textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -90,6 +94,11 @@ class _RecentlyPlayedScreenState extends ConsumerState<RecentlyPlayedScreen> {
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+    final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
+
     if (_loading) {
       return const LumaListSkeleton(count: 8);
     }
@@ -101,19 +110,20 @@ class _RecentlyPlayedScreenState extends ConsumerState<RecentlyPlayedScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.white38, size: 48),
+              Icon(Icons.error_outline_rounded,
+                  color: isDark ? Colors.white38 : Colors.black38, size: 48),
               const SizedBox(height: 12),
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                style: TextStyle(color: textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 16),
               OutlinedButton(
                 onPressed: _fetchHistory,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
+                  foregroundColor: textPrimary,
+                  side: BorderSide(color: theme.dividerColor),
                 ),
                 child: const Text('Coba Lagi'),
               ),
@@ -124,20 +134,21 @@ class _RecentlyPlayedScreenState extends ConsumerState<RecentlyPlayedScreen> {
     }
 
     if (_tracks.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.history_rounded, color: Colors.white24, size: 64),
-            SizedBox(height: 16),
+            Icon(Icons.history_rounded,
+                color: isDark ? Colors.white24 : Colors.black26, size: 64),
+            const SizedBox(height: 16),
             Text(
               'Belum ada riwayat',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(
               'Lagu yang kamu dengarkan akan muncul di sini.',
-              style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13),
+              style: TextStyle(color: textSecondary, fontSize: 13),
             ),
           ],
         ),
@@ -146,8 +157,8 @@ class _RecentlyPlayedScreenState extends ConsumerState<RecentlyPlayedScreen> {
 
     return RefreshIndicator(
       onRefresh: _fetchHistory,
-      color: LumaColors.accent,
-      backgroundColor: LumaColors.darkSurface,
+      color: theme.colorScheme.primary,
+      backgroundColor: theme.colorScheme.surface,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: _tracks.length,
