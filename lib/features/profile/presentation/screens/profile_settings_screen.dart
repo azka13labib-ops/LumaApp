@@ -64,22 +64,21 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
     return Scaffold(
       backgroundColor: scaffoldBg,
-      body: CustomScrollView(
+      appBar: AppBar(
+        backgroundColor: scaffoldBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.primary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('Pengaturan', 
+          style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 17, letterSpacing: -0.5)),
+      ),
+      body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        slivers: [
-          SliverAppBar.large(
-            backgroundColor: scaffoldBg,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.primary),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: Text('Pengaturan', 
-              style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
+        child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +138,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   
                   // Pemutaran
                   _SectionHeader(title: 'Pemutaran', color: textSecondary),
@@ -173,7 +172,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Tampilan
                   _SectionHeader(title: 'Tampilan', color: textSecondary),
@@ -191,7 +190,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Penyimpanan
                   _SectionHeader(title: 'Penyimpanan', color: textSecondary),
@@ -223,7 +222,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Bantuan
                   _SectionHeader(title: 'Bantuan & Info', color: textSecondary),
@@ -248,7 +247,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
                   // Logout Button
                   InteractiveScaleButton(
@@ -269,14 +268,12 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 64),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
+      );
   }
 
   Future<void> _handleLogout(BuildContext context) async {
@@ -560,11 +557,15 @@ class _SettingsTile extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12, top: 2),
                   child: Row(
                     children: [
-                      Text(label, style: TextStyle(color: textPrimary, fontSize: 16)),
-                      const Spacer(),
+                      Expanded(
+                        child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
+                      ),
+                      const SizedBox(width: 8),
                       if (value != null)
-                        Text(value!, style: TextStyle(color: textSecondary, fontSize: 15)),
-                      const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(value!, style: TextStyle(color: textSecondary, fontSize: 15), overflow: TextOverflow.ellipsis),
+                        ),
+                      const SizedBox(width: 4),
                       Icon(Icons.chevron_right_rounded, color: textSecondary.withOpacity(0.5), size: 20),
                     ],
                   ),
@@ -624,8 +625,10 @@ class _SettingsToggle extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8, top: 4),
               child: Row(
                 children: [
-                  Text(label, style: TextStyle(color: textPrimary, fontSize: 16)),
-                  const Spacer(),
+                  Expanded(
+                    child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
+                  ),
+                  const SizedBox(width: 8),
                   CupertinoSwitch(
                     value: value,
                     activeColor: theme.colorScheme.primary,
