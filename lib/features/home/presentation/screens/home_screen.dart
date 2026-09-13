@@ -386,7 +386,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 
                 if (_recentlyPlayed.length > 1)
                   SizedBox(
-                    height: 150,
+                    height: 200,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -406,7 +406,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
                 ),
                 SizedBox(
-                  height: 150,
+                  height: 200,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -587,35 +587,47 @@ class _HorizontalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InteractiveScaleButton(
       pressedScale: 0.95,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
-        width: 104,
+        width: 140,
         margin: const EdgeInsets.only(right: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: item.thumbnailUrl,
-                width: 104, height: 104, fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  width: 104, height: 104, color: Theme.of(context).colorScheme.surface,
-                ),
-                errorWidget: (context, url, error) => Container(
-                  width: 104, height: 104, color: Theme.of(context).colorScheme.surface,
-                  child: Icon(Icons.music_note, color: Theme.of(context).dividerColor, size: 32),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl: item.thumbnailUrl,
+                  width: 140, height: 140, fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    width: 140, height: 140, color: Theme.of(context).colorScheme.surface,
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    width: 140, height: 140, color: Theme.of(context).colorScheme.surface,
+                    child: Icon(Icons.music_note, color: Theme.of(context).dividerColor, size: 32),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(item.title,
-              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13, fontWeight: FontWeight.w600),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14, fontWeight: FontWeight.w700),
               maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(item.author,
-              style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 11),
+              style: TextStyle(color: Theme.of(context).textTheme.labelSmall?.color, fontSize: 13),
               maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
         ),
@@ -634,19 +646,39 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InteractiveScaleButton(
       pressedScale: 0.97,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       onTap: onTap,
       child: Container(
-        height: 200,
+        height: 240,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
           image: DecorationImage(
             image: CachedNetworkImageProvider(item.thumbnailUrl),
             fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.5), BlendMode.darken),
           ),
         ),
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black.withOpacity(0.2),
+                Colors.black.withOpacity(0.8),
+              ],
+              stops: const [0.4, 0.7, 1.0],
+            ),
+          ),
+          child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,32 +688,36 @@ class _HeroCard extends StatelessWidget {
                 item.title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
+                  fontSize: 26,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
+                  height: 1.2,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 6),
-                  Text(
-                    item.author,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                  const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 24),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.author,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -719,59 +755,26 @@ class _HomeSkeleton extends StatelessWidget {
             ),
             // Horizontal cards row
             SizedBox(
-              height: 168,
+              height: 220,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: 5,
+                itemCount: 4,
                 itemBuilder: (_, __) => Container(
-                  width: 120,
-                  margin: const EdgeInsets.only(right: 12),
+                  width: 140,
+                  margin: const EdgeInsets.only(right: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Container(width: 120, height: 120, color: surfaceColor),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(width: 140, height: 140, color: surfaceColor),
                       ),
-                      const SizedBox(height: 6),
-                      Container(height: 11, width: 90, color: placeholderColor),
-                      const SizedBox(height: 4),
-                      Container(height: 10, width: 60, color: placeholderColor),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Section 2 header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Text('Lagu Disukai',
-                style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w700)),
-            ),
-            SizedBox(
-              height: 168,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 5,
-                itemBuilder: (_, __) => Container(
-                  width: 120,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Container(width: 120, height: 120, color: surfaceColor),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(height: 11, width: 90, color: placeholderColor),
-                      const SizedBox(height: 4),
-                      Container(height: 10, width: 60, color: placeholderColor),
+                      const SizedBox(height: 12),
+                      Container(height: 14, width: 100, color: placeholderColor),
+                      const SizedBox(height: 8),
+                      Container(height: 12, width: 70, color: placeholderColor),
                     ],
                   ),
                 ),
