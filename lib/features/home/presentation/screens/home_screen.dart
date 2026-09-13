@@ -176,7 +176,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     final theme = Theme.of(context);
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
-    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
