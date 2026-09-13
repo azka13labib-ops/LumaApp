@@ -126,8 +126,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     try {
       await Supabase.instance.client.auth.signInWithOAuth(
         provider,
-        redirectTo: 'io.supabase.lumaapp://login-callback/',
-        authScreenLaunchMode: LaunchMode.externalApplication,
+        redirectTo: kIsWeb ? null : 'io.supabase.lumaapp://login-callback/',
+        authScreenLaunchMode:
+            kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
       );
       await Future.delayed(const Duration(seconds: 2));
     } on AuthException catch (e) {
