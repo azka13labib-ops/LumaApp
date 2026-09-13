@@ -27,6 +27,10 @@ class TrackRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? LumaColors.darkTextPrimary : LumaColors.lightTextPrimary;
+    final textSecondary = isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary;
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -43,13 +47,13 @@ class TrackRow extends ConsumerWidget {
                 placeholder: (context, url) => Container(
                     width: 48,
                     height: 48,
-                    color: LumaColors.darkSurface,
+                    color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
                 ),
                 errorWidget: (context, url, error) => Container(
                     width: 48,
                     height: 48,
-                    color: LumaColors.darkSurface,
-                    child: const Icon(Icons.music_note, color: Colors.white30, size: 20)),
+                    color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
+                    child: Icon(Icons.music_note, color: isDark ? Colors.white30 : LumaColors.lightTextMuted, size: 20)),
               ),
             ),
             const SizedBox(width: 16),
@@ -58,13 +62,13 @@ class TrackRow extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.title,
-                      style: const TextStyle(
-                          color: LumaColors.darkTextPrimary, fontWeight: FontWeight.w600, fontSize: 15),
+                      style: TextStyle(
+                          color: textPrimary, fontWeight: FontWeight.w600, fontSize: 15),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
                   Text(item.author,
-                      style: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13),
+                      style: TextStyle(color: textSecondary, fontSize: 13),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                 ],
@@ -75,7 +79,7 @@ class TrackRow extends ConsumerWidget {
             if (!showDownload)
               trailing ??
                   IconButton(
-                    icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 20),
+                    icon: Icon(Icons.more_vert_rounded, color: isDark ? Colors.white54 : LumaColors.lightTextSecondary, size: 20),
                     onPressed: () => _showTrackMenu(context, ref, item),
                   ),
           ],
@@ -86,9 +90,16 @@ class TrackRow extends ConsumerWidget {
 
   void _showTrackMenu(BuildContext context, WidgetRef ref, MusicItem item) {
     HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? LumaColors.darkSurface : Colors.white;
+    final textPrimary = isDark ? Colors.white : LumaColors.lightTextPrimary;
+    final textSecondary = isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary;
+    final iconColor = isDark ? Colors.white : const Color(0xFF18181B);
+    final dividerColor = isDark ? const Color(0xFF2A2A2A) : LumaColors.lightDivider;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: LumaColors.darkSurface,
+      backgroundColor: sheetBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -101,7 +112,7 @@ class TrackRow extends ConsumerWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: isDark ? Colors.white24 : LumaColors.lightDivider,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -119,13 +130,13 @@ class TrackRow extends ConsumerWidget {
                       placeholder: (context, url) => Container(
                         width: 48,
                         height: 48,
-                        color: const Color(0xFF222222),
+                        color: isDark ? const Color(0xFF222222) : LumaColors.lightSurface,
                       ),
                       errorWidget: (context, url, error) => Container(
                         width: 48,
                         height: 48,
-                        color: const Color(0xFF222222),
-                        child: const Icon(Icons.music_note, color: Colors.white24),
+                        color: isDark ? const Color(0xFF222222) : LumaColors.lightSurface,
+                        child: Icon(Icons.music_note, color: isDark ? Colors.white24 : LumaColors.lightTextMuted),
                       ),
                     ),
                   ),
@@ -136,8 +147,8 @@ class TrackRow extends ConsumerWidget {
                       children: [
                         Text(
                           item.title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -146,8 +157,8 @@ class TrackRow extends ConsumerWidget {
                         ),
                         Text(
                           item.author,
-                          style: const TextStyle(
-                            color: LumaColors.darkTextSecondary,
+                          style: TextStyle(
+                            color: textSecondary,
                             fontSize: 13,
                           ),
                           maxLines: 1,
@@ -159,17 +170,17 @@ class TrackRow extends ConsumerWidget {
                 ],
               ),
             ),
-            const Divider(color: Color(0xFF2A2A2A), height: 1),
+            Divider(color: dividerColor, height: 1),
             ListTile(
-              leading: const Icon(Icons.playlist_add_rounded, color: Colors.white),
-              title: const Text('Tambah ke Playlist', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.playlist_add_rounded, color: iconColor),
+              title: Text('Tambah ke Playlist', style: TextStyle(color: textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 final user = Supabase.instance.client.auth.currentUser;
                 if (user != null) {
                   showModalBottomSheet(
                     context: context,
-                    backgroundColor: LumaColors.darkSurface,
+                    backgroundColor: sheetBg,
                     isScrollControlled: true,
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -184,8 +195,8 @@ class TrackRow extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.download_rounded, color: Colors.white),
-              title: const Text('Unduh Lagu', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.download_rounded, color: iconColor),
+              title: Text('Unduh Lagu', style: TextStyle(color: textPrimary)),
               onTap: () async {
                 Navigator.pop(ctx);
                 final isCached = await OfflineCacheService.instance.isCached(item.id);
@@ -214,8 +225,8 @@ class TrackRow extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.person_rounded, color: Colors.white),
-              title: const Text('Lihat Artis', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.person_rounded, color: iconColor),
+              title: Text('Lihat Artis', style: TextStyle(color: textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.push(
@@ -238,6 +249,9 @@ class _DownloadTrackButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = isDark ? Colors.white : const Color(0xFF18181B);
+    final inactiveColor = isDark ? Colors.white54 : LumaColors.lightTextMuted;
     final isCached = ref.watch(playerProvider).isCached;
     final isDownloading = ref.watch(playerProvider).isDownloading;
     final progress = ref.watch(playerProvider).downloadingProgress;
@@ -251,12 +265,12 @@ class _DownloadTrackButton extends ConsumerWidget {
         icon: isDownloading && state.current?.id == item.id
             ? CircularProgressIndicator(
                 strokeWidth: 2,
-                color: LumaColors.accent,
+                color: accentColor,
                 value: progress?.clamp(0.0, 1.0),
               )
             : Icon(
                 isCached ? Icons.download_done_rounded : Icons.download_rounded,
-                color: isCached ? LumaColors.accent : Colors.white54,
+                color: isCached ? accentColor : inactiveColor,
                 size: 20,
               ),
         onPressed: () async {
@@ -292,7 +306,7 @@ SnackBar _modernSnack(String msg, {bool isError = false}) {
       children: [
         Icon(
           isError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
-          color: isError ? Colors.red.shade300 : LumaColors.accent,
+          color: isError ? Colors.red.shade300 : Colors.white,
           size: 20,
         ),
         const SizedBox(width: 12),
