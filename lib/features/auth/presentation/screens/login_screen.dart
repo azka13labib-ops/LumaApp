@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/luma_emblem.dart';
 import 'register_screen.dart';
@@ -124,12 +125,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     HapticFeedback.lightImpact();
     setState(() { _isLoading = true; _error = null; });
     try {
-      await Supabase.instance.client.auth.signInWithOAuth(
-        provider,
-        redirectTo: kIsWeb ? null : 'io.supabase.lumaapp://login-callback/',
-        authScreenLaunchMode:
-            kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
-      );
+      if (kIsWeb) {
+        final res = await Supabase.instance.client.auth.getOAuthSignInUrl(
+          provider: provider,
+        );
+        await launchUrl(
+          Uri.parse(res.url),
+          webOnlyWindowName: '_blank',
+        );
+      } else {
+        await Supabase.instance.client.auth.signInWithOAuth(
+          provider,
+          redirectTo: 'io.supabase.lumaapp://login-callback/',
+          authScreenLaunchMode: LaunchMode.externalApplication,
+        );
+      }
       await Future.delayed(const Duration(seconds: 2));
     } on AuthException catch (e) {
       if (mounted) setState(() => _error = _translateAuthError(e.message));
