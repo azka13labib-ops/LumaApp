@@ -32,6 +32,15 @@ class LumaColors {
   static const Color lightTextPrimary    = Color(0xFF09090B); // Zinc-950
   static const Color lightTextSecondary  = Color(0xFF71717A); // Zinc-500
   static const Color lightTextMuted      = Color(0xFFA1A1AA); // Zinc-400
+
+  /// High-contrast primary focal color: Pure white in Dark Mode, Obsidian Zinc-900 in Light Mode.
+  static Color primary(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF18181B);
+
+  /// High-contrast foreground color to draw on top of [primary]:
+  /// Pure black in Dark Mode, Pure white in Light Mode.
+  static Color onPrimary(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white;
 }
 
 class AppTheme {
@@ -177,6 +186,22 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceColor,
+        selectedColor: Colors.white,
+        labelStyle: GoogleFonts.plusJakartaSans(
+          color: LumaColors.darkTextPrimary,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        secondaryLabelStyle: GoogleFonts.plusJakartaSans(
+          color: Colors.black,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        side: BorderSide(color: dividerColor),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
     );
   }
 
@@ -300,6 +325,22 @@ class AppTheme {
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: LumaColors.lightSurface,
+        selectedColor: const Color(0xFF18181B),
+        labelStyle: GoogleFonts.plusJakartaSans(
+          color: LumaColors.lightTextPrimary,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        secondaryLabelStyle: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        side: const BorderSide(color: LumaColors.lightBorder),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
