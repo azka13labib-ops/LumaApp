@@ -35,17 +35,22 @@ class _PremiumScreenState extends State<PremiumScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
-            backgroundColor: LumaColors.darkBg,
+            backgroundColor: theme.scaffoldBackgroundColor,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                color: LumaColors.darkSurface,
+                color: theme.colorScheme.surface,
                 child: SafeArea(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -55,26 +60,26 @@ class _PremiumScreenState extends State<PremiumScreen> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: LumaColors.accent.withValues(alpha: 0.15),
+                          color: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Icon(Icons.workspace_premium_rounded,
-                            color: LumaColors.accent, size: 32),
+                        child: Icon(Icons.workspace_premium_rounded,
+                            color: theme.colorScheme.primary, size: 32),
                       ),
                       const SizedBox(height: 14),
-                      const Text(
+                      Text(
                         'Luma Premium',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: textPrimary,
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'Segera hadir: daftar untuk menerima pengingat',
-                        style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 13),
+                        style: TextStyle(color: textSecondary, fontSize: 13),
                       ),
                     ],
                   ),
@@ -88,10 +93,10 @@ class _PremiumScreenState extends State<PremiumScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Manfaat Mendatang',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
@@ -106,13 +111,15 @@ class _PremiumScreenState extends State<PremiumScreen> {
                     child: ElevatedButton(
                       onPressed: _toggleNotification,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isNotified ? LumaColors.darkSurface : LumaColors.accent,
-                        foregroundColor: _isNotified ? Colors.white : Colors.black,
+                        backgroundColor: _isNotified
+                            ? (isDark ? const Color(0xFF27272A) : LumaColors.lightBorder)
+                            : theme.colorScheme.primary,
+                        foregroundColor: _isNotified ? textPrimary : theme.colorScheme.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: _isNotified
-                              ? const BorderSide(color: Colors.white24, width: 1)
+                              ? BorderSide(color: theme.dividerColor, width: 1)
                               : BorderSide.none,
                         ),
                       ),
@@ -122,7 +129,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                           Icon(
                             _isNotified ? Icons.check_circle_rounded : Icons.notifications_active_rounded,
                             size: 20,
-                            color: _isNotified ? LumaColors.accent : Colors.black,
+                            color: _isNotified ? textPrimary : theme.colorScheme.onPrimary,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -131,7 +138,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.2,
-                              color: _isNotified ? Colors.white : Colors.black,
+                              color: _isNotified ? textPrimary : theme.colorScheme.onPrimary,
                             ),
                           ),
                         ],
@@ -155,6 +162,11 @@ class _FeatureRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -164,10 +176,10 @@ class _FeatureRow extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: LumaColors.accent.withValues(alpha: 0.12),
+              color: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(feature.icon, color: LumaColors.accent, size: 22),
+            child: Icon(feature.icon, color: theme.colorScheme.primary, size: 22),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -176,8 +188,8 @@ class _FeatureRow extends StatelessWidget {
               children: [
                 Text(
                   feature.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.2,
@@ -186,8 +198,8 @@ class _FeatureRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   feature.subtitle,
-                  style: const TextStyle(
-                    color: LumaColors.darkTextSecondary,
+                  style: TextStyle(
+                    color: textSecondary,
                     fontSize: 13,
                     height: 1.35,
                   ),

@@ -253,19 +253,19 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                 ),
                 onPressed: _canCreate ? _create : null,
                 child: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.black,
+                          color: theme.colorScheme.onPrimary,
                         ))
                     : Text(
                         hasText ? 'Buat Playlist' : 'Masukkan Nama Playlist',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: hasText ? Colors.black : textSecondary,
+                          color: hasText ? theme.colorScheme.onPrimary : textSecondary,
                           letterSpacing: -0.2,
                         ),
                       ),
