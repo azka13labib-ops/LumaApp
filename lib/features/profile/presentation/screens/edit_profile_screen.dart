@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -47,7 +48,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         UserAttributes(data: {'display_name': newName}),
       );
       if (mounted) {
-        Navigator.pop(context, true); // return true to indicate success
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profil berhasil diperbarui')),
         );
@@ -66,68 +67,84 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
     final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+    final scaffoldBg = isDark ? Colors.black : const Color(0xFFF2F2F7);
+    final surfaceColor = isDark ? const Color(0xFF1C1C1E) : Colors.white; 
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
-        title: Text('Edit Profil', style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
+        title: Text('Edit Profil', style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 17)),
+        backgroundColor: scaffoldBg,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.primary),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (_isLoading)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary),
+                ),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: _saveProfile,
+              child: Text('Simpan', style: TextStyle(color: theme.colorScheme.primary, fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+        ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Nama Tampilan',
-              style: TextStyle(
-                color: textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+            Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 8),
+              child: Text(
+                'NAMA TAMPILAN',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              style: TextStyle(color: textPrimary, fontSize: 16),
-              cursorColor: theme.colorScheme.primary,
-              decoration: InputDecoration(
-                hintText: 'Masukkan nama kamu',
-                hintStyle: TextStyle(color: textSecondary),
-                filled: true,
-                fillColor: theme.colorScheme.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            Container(
+              decoration: BoxDecoration(
+                color: surfaceColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                controller: _nameController,
+                style: TextStyle(color: textPrimary, fontSize: 16),
+                cursorColor: theme.colorScheme.primary,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan nama kamu',
+                  hintStyle: TextStyle(color: textSecondary),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Nama ini akan ditampilkan di profil dan ulasan publik kamu.',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 12,
                 ),
-                child: _isLoading
-                    ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: theme.colorScheme.onPrimary, strokeWidth: 2.5))
-                    : const Text('Simpan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
               ),
             ),
           ],
