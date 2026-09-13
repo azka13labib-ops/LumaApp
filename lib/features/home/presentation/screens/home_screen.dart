@@ -433,39 +433,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     itemCount: _artists.length,
                     itemBuilder: (context, i) {
                       final name = _artists[i];
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(12),
+                      return InteractiveScaleButton(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => ArtistScreen(artistName: name)),
+                          CupertinoPageRoute(builder: (_) => ArtistScreen(artistName: name)),
                         ),
+                        pressedScale: 0.95,
+                        borderRadius: BorderRadius.circular(16),
                         child: Container(
-                          width: 96,
+                          width: 120,
                           margin: const EdgeInsets.only(right: 14),
-                          child: Column(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                                Theme.of(context).colorScheme.secondary.withValues(alpha: 0.6),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Stack(
                             children: [
-                              CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Theme.of(context).colorScheme.surface,
-                                child: Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                  style: TextStyle(
-                                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                              Positioned(
+                                right: -16,
+                                bottom: -16,
+                                child: Icon(Icons.music_note_rounded, size: 80, color: Colors.white.withOpacity(0.15)),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                name,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: Colors.white24,
+                                      child: Text(
+                                        name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      name,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -766,14 +792,11 @@ class _HomeSkeleton extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: 6,
                 itemBuilder: (_, __) => Container(
-                  width: 96,
+                  width: 120,
                   margin: const EdgeInsets.only(right: 14),
-                  child: Column(
-                    children: [
-                      CircleAvatar(radius: 40, backgroundColor: surfaceColor),
-                      const SizedBox(height: 8),
-                      Container(height: 11, width: 64, color: placeholderColor),
-                    ],
+                  decoration: BoxDecoration(
+                    color: surfaceColor,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
