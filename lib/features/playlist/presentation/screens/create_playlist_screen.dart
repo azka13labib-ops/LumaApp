@@ -1,10 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/theme/app_theme.dart';
 
 class CreatePlaylistScreen extends StatefulWidget {
   const CreatePlaylistScreen({super.key});
@@ -214,7 +211,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                     ),
                     focusedBorder: UnderlineInputBorder(
                       borderSide: BorderSide(
-                          color: LumaColors.accent.withValues(alpha: 0.8),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.8),
                           width: 2),
                     ),
                     contentPadding:
@@ -247,9 +244,9 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                      hasText ? LumaColors.accent : theme.colorScheme.surface,
+                      hasText ? theme.colorScheme.primary : theme.colorScheme.surface,
                   foregroundColor:
-                      hasText ? Colors.black : textSecondary,
+                      hasText ? theme.colorScheme.onPrimary : textSecondary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
