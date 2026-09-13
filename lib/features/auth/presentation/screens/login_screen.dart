@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/oauth_loopback_server.dart';
 import '../widgets/luma_emblem.dart';
 import 'register_screen.dart';
 
@@ -21,6 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   final _passCtrl  = TextEditingController();
   final _emailFocusNode = FocusNode();
   final _passFocusNode = FocusNode();
+  final _loopbackServer = OAuthLoopbackServer();
   
   bool _isLoading  = false;
   bool _obscure    = true;
@@ -45,6 +47,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     _emailFocusNode.dispose();
     _passFocusNode.dispose();
     _animController.dispose();
+    _loopbackServer.stop();
     super.dispose();
   }
 
@@ -136,9 +139,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
           webOnlyWindowName: '_blank',
         );
       } else {
+        // Start local loopback server on port 3000 to catch localhost:3000 redirect
+        await _loopbackServer.start(
+          onCallback: (Uri uri) async {
+            debugPrint('[Auth] Caught OAuth callback via loopback: $uri');
+            try {
+              await Supabase.instance.client.auth.getSessionFromUrl(uri);
+              if (mounted) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+            } catch (e) {
+              debugPrint('[Auth] Error getting session from loopback: $e');
+            }
+          },
+        );
+
         await Supabase.instance.client.auth.signInWithOAuth(
           provider,
-          redirectTo: 'io.supabase.lumaapp://login-callback/',
+          redirectTo: 'io.supabase.lumaapp://login-callback',
           authScreenLaunchMode: LaunchMode.externalApplication,
         );
       }
