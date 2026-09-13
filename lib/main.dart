@@ -115,7 +115,9 @@ class _MainShellState extends State<MainShell> {
               onTap: (index) => setState(() => _currentIndex = index),
               type: BottomNavigationBarType.fixed,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              selectedItemColor: LumaColors.accent,
+              selectedItemColor: Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.white 
+                  : const Color(0xFF18181B),
               unselectedItemColor: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ?? Colors.grey,
               selectedFontSize: 11,
               unselectedFontSize: 11,
