@@ -193,8 +193,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     const textPrimary = Color(0xFF111111);
     const textSecondary = Color(0xFF6B7280);
     const dividerColor = Color(0xFFE5E7EB);
-    const primaryBlue = Color(0xFF1C4ED8);
-    const primaryBlueLight = Color(0xFF3B82F6);
+    const primaryObsidian = Color(0xFF09090B);
+    const primaryCharcoal = Color(0xFF27272A);
     
     final items = <Widget>[
       // Error Message
@@ -247,7 +247,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       // Sign In Button
       _AnimatedGradientButton(
         onPressed: _isLoading ? null : _login,
-        colors: const [primaryBlueLight, primaryBlue],
+        colors: const [primaryCharcoal, primaryObsidian],
         textColor: Colors.white,
         child: _isLoading
             ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
@@ -261,11 +261,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
           onTap: _forgotPassword,
           borderRadius: BorderRadius.circular(20),
           splashColor: Colors.transparent,
-          highlightColor: primaryBlue.withValues(alpha: 0.1),
+          highlightColor: primaryObsidian.withValues(alpha: 0.06),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             child: Text('Forgot Password?', style: TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w600, color: primaryBlue,
+              fontSize: 14, fontWeight: FontWeight.w600, color: primaryObsidian,
             )),
           ),
         ),
@@ -328,7 +328,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
             child: Text('Sign up', style: TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w600, color: primaryBlue
+              fontSize: 14, fontWeight: FontWeight.w600, color: primaryObsidian,
             )),
           ),
         ),
@@ -381,13 +381,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                     width: 52,
                                     height: 52,
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFFF3F4F6),
+                                      color: Color(0xFFF4F4F5),
                                       shape: BoxShape.circle,
                                     ),
                                     alignment: Alignment.center,
                                     child: const LumaEmblem(
                                       size: 30,
-                                      color: primaryBlue,
+                                      color: primaryObsidian,
                                     ),
                                   ),
                                 ],
@@ -474,12 +474,12 @@ class _PillTextFieldState extends State<_PillTextField> {
         color: _isFocused ? Colors.white : const Color(0xFFF9FAFB),
         borderRadius: BorderRadius.circular(30), // Pill shape
         border: Border.all(
-          color: _isFocused ? const Color(0xFF1C4ED8) : Colors.transparent,
+          color: _isFocused ? const Color(0xFF18181B) : Colors.transparent,
           width: _isFocused ? 1.5 : 0.0,
         ),
         boxShadow: _isFocused ? [
           BoxShadow(
-            color: const Color(0xFF1C4ED8).withValues(alpha: 0.1),
+            color: const Color(0xFF18181B).withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 4),
           )
@@ -492,7 +492,7 @@ class _PillTextFieldState extends State<_PillTextField> {
         keyboardType: widget.keyboardType,
         autofillHints: widget.autofillHints,
         style: const TextStyle(color: Color(0xFF111111), fontSize: 15, fontWeight: FontWeight.w500),
-        cursorColor: const Color(0xFF1C4ED8),
+        cursorColor: const Color(0xFF18181B),
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontWeight: FontWeight.w400, fontSize: 15),
