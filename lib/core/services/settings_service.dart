@@ -115,7 +115,8 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   File? _file;
 
-  Future<File> _getFile() async {
+  Future<File?> _getFile() async {
+    if (kIsWeb) return null;
     if (_file != null) return _file!;
     final dir = await getApplicationDocumentsDirectory();
     _file = File('${dir.path}/app_settings.json');
@@ -123,9 +124,10 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   }
 
   Future<void> _loadSettings() async {
+    if (kIsWeb) return;
     try {
       final file = await _getFile();
-      if (await file.exists()) {
+      if (file != null && await file.exists()) {
         final content = await file.readAsString();
         final map = jsonDecode(content) as Map<String, dynamic>;
         state = AppSettings.fromMap(map);
@@ -137,9 +139,12 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   Future<void> _saveSettings(AppSettings newSettings) async {
     state = newSettings;
+    if (kIsWeb) return;
     try {
       final file = await _getFile();
-      await file.writeAsString(jsonEncode(newSettings.toMap()));
+      if (file != null) {
+        await file.writeAsString(jsonEncode(newSettings.toMap()));
+      }
     } catch (e) {
       debugPrint('[Settings] Save failed: $e');
     }
