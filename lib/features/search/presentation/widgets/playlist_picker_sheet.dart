@@ -3,7 +3,6 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/services/youtube_service.dart';
-import '../../../../core/theme/app_theme.dart';
 
 class PlaylistPickerSheet extends StatelessWidget {
   const PlaylistPickerSheet({super.key, required this.item, required this.userId});
@@ -13,6 +12,11 @@ class PlaylistPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -25,13 +29,13 @@ class PlaylistPickerSheet extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                      color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      color: theme.dividerColor, borderRadius: BorderRadius.circular(2)))),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Text('Tambah ke Playlist',
-                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+                style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
           ),
-          const Divider(height: 1, color: Color(0xFF2A2A2A)),
+          Divider(height: 1, color: theme.dividerColor),
           FutureBuilder(
             future: Supabase.instance.client
                 .from('playlists')
@@ -42,10 +46,10 @@ class PlaylistPickerSheet extends StatelessWidget {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Skeletonizer(
                   enabled: true,
-                  effect: const ShimmerEffect(
-                    baseColor: Color(0xFF1E1E1E),
-                    highlightColor: Color(0xFF2E2E2E),
-                    duration: Duration(milliseconds: 1200),
+                  effect: ShimmerEffect(
+                    baseColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade300,
+                    highlightColor: isDark ? const Color(0xFF2E2E2E) : Colors.grey.shade100,
+                    duration: const Duration(milliseconds: 1200),
                   ),
                   child: ListView.builder(
                     shrinkWrap: true,
@@ -55,11 +59,11 @@ class PlaylistPickerSheet extends StatelessWidget {
                       leading: Container(
                         width: 44, height: 44,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E1E),
+                          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
-                      title: Container(height: 13, width: 140, color: Colors.white),
+                      title: Container(height: 13, width: 140, color: textPrimary),
                     ),
                   ),
                 );
@@ -72,14 +76,14 @@ class PlaylistPickerSheet extends StatelessWidget {
               }
               final playlists = snapshot.data as List<dynamic>? ?? [];
               if (playlists.isEmpty) {
-                return const Padding(
-                    padding: EdgeInsets.all(32),
+                return Padding(
+                    padding: const EdgeInsets.all(32),
                     child: Center(
                         child: Column(children: [
-                      Icon(Icons.playlist_add_rounded, color: Colors.white24, size: 40),
-                      SizedBox(height: 12),
+                      Icon(Icons.playlist_add_rounded, color: theme.dividerColor, size: 40),
+                      const SizedBox(height: 12),
                       Text('Belum ada playlist.\nBuat playlist dari tab +',
-                          style: TextStyle(color: LumaColors.darkTextSecondary, fontSize: 14),
+                          style: TextStyle(color: textSecondary, fontSize: 14),
                           textAlign: TextAlign.center),
                     ])));
               }
@@ -94,11 +98,11 @@ class PlaylistPickerSheet extends StatelessWidget {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                            color: LumaColors.darkSurface, borderRadius: BorderRadius.circular(4)),
-                        child: const Icon(Icons.queue_music_rounded,
-                            color: Colors.white38, size: 20)),
+                            color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(4)),
+                        child: Icon(Icons.queue_music_rounded,
+                            color: textSecondary, size: 20)),
                     title: Text(p['name'] ?? 'Playlist',
-                        style: const TextStyle(color: Colors.white, fontSize: 15)),
+                        style: TextStyle(color: textPrimary, fontSize: 15)),
                     onTap: () async {
                       Navigator.pop(context);
                       try {
@@ -112,7 +116,7 @@ class PlaylistPickerSheet extends StatelessWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text('Ditambahkan ke ${p['name']}'),
-                            backgroundColor: LumaColors.darkSurface,
+                            backgroundColor: theme.colorScheme.surface,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ));

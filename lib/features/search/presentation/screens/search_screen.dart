@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/youtube_service.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../player/presentation/widgets/track_row.dart';
 import '../../../../core/widgets/luma_list_skeleton.dart';
@@ -92,12 +91,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       hintStyle: TextStyle(color: textSecondary, fontSize: 15),
                       prefixIcon: Icon(Icons.search_rounded, color: textSecondary),
                       suffixIcon: (_loading || _isDebouncing)
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
+                          ? Padding(
+                              padding: const EdgeInsets.all(12),
                               child: SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: LumaColors.accent),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary),
                               ),
                             )
                           : _controller.text.isNotEmpty
@@ -117,7 +116,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: LumaColors.accent, width: 1.5),
+                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                       ),
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
@@ -146,12 +145,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, color: Colors.white24, size: 48),
+            Icon(Icons.wifi_off_rounded,
+                color: theme.brightness == Brightness.dark ? Colors.white24 : Colors.black26, size: 48),
             const SizedBox(height: 16),
             Text(_error!, style: TextStyle(color: textPrimary, fontSize: 15), textAlign: TextAlign.center),
             const SizedBox(height: 16),
             TextButton(onPressed: () => _search(_controller.text),
-              child: const Text('Coba lagi', style: TextStyle(color: LumaColors.accent))),
+              child: Text('Coba lagi', style: TextStyle(color: theme.colorScheme.primary))),
           ],
         ),
       ));

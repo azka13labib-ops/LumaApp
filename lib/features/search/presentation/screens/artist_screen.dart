@@ -65,23 +65,28 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+    final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
+
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 160,
             pinned: true,
-            backgroundColor: LumaColors.darkBg,
+            backgroundColor: theme.scaffoldBackgroundColor,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 widget.artistName,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: textPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 18,
                 ),
@@ -92,8 +97,10 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      LumaColors.accent.withValues(alpha: 0.35),
-                      LumaColors.darkBg,
+                      isDark
+                          ? const Color(0xFF27272A).withValues(alpha: 0.35)
+                          : const Color(0xFFE4E4E7).withValues(alpha: 0.5),
+                      theme.scaffoldBackgroundColor,
                     ],
                   ),
                 ),
@@ -110,21 +117,21 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(_error!, style: const TextStyle(color: Colors.white70)),
+                    Text(_error!, style: TextStyle(color: textSecondary)),
                     TextButton(
                       onPressed: _load,
-                      child: const Text('Coba lagi', style: TextStyle(color: LumaColors.accent)),
+                      child: Text('Coba lagi', style: TextStyle(color: theme.colorScheme.primary)),
                     ),
                   ],
                 ),
               ),
             )
           else if (_tracks.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
                 child: Text(
                   'Tidak ada lagu ditemukan.',
-                  style: TextStyle(color: LumaColors.darkTextSecondary),
+                  style: TextStyle(color: textSecondary),
                 ),
               ),
             )
@@ -142,8 +149,8 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                     const SizedBox(width: 10),
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white24),
+                        foregroundColor: textPrimary,
+                        side: BorderSide(color: theme.dividerColor),
                       ),
                       onPressed: () {
                         final shuffled = List<MusicItem>.from(_tracks)..shuffle();
@@ -174,13 +181,14 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                           placeholder: (context, url) => Container(
                             width: 48,
                             height: 48,
-                            color: LumaColors.darkSurface,
+                            color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
                           ),
                           errorWidget: (context, url, error) => Container(
                             width: 48,
                             height: 48,
-                            color: LumaColors.darkSurface,
-                            child: const Icon(Icons.music_note, color: Colors.white38),
+                            color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
+                            child: Icon(Icons.music_note,
+                                color: isDark ? Colors.white38 : LumaColors.lightTextMuted),
                           ),
                         ),
                       ),
@@ -188,8 +196,8 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                         item.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -198,15 +206,16 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                         item.author,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: LumaColors.darkTextSecondary, fontSize: 12),
+                        style: TextStyle(color: textSecondary, fontSize: 12),
                       ),
                       trailing: IconButton(
-                        icon: const Icon(Icons.playlist_add_rounded, color: Colors.white38),
+                        icon: Icon(Icons.playlist_add_rounded,
+                            color: isDark ? Colors.white38 : LumaColors.lightTextMuted),
                         onPressed: () {
                           ref.read(playerProvider.notifier).addToQueue(item);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: const Text('Ditambahkan ke antrian'),
-                            backgroundColor: LumaColors.darkSurface,
+                            backgroundColor: isDark ? LumaColors.darkSurface : const Color(0xFF18181B),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ));
