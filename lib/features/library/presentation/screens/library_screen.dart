@@ -7,7 +7,8 @@ import '../../../../core/widgets/luma_list_skeleton.dart';
 import '../../../playlist/presentation/screens/create_playlist_screen.dart';
 import 'liked_songs_screen.dart';
 import 'playlist_detail_screen.dart';
-import 'settings_screen.dart';
+import 'package:flutter/cupertino.dart';
+import '../../../profile/presentation/screens/profile_settings_screen.dart';
 import 'downloads_screen.dart';
 import '../../../../core/services/offline_cache_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -117,7 +118,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                        CupertinoPageRoute(builder: (_) => const ProfileSettingsScreen())),
                     child: CircleAvatar(
                       radius: 16,
                       backgroundColor: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
@@ -161,7 +162,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   IconButton(
                     icon: Icon(Icons.settings_rounded, color: textSecondary, size: 22),
                     onPressed: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                        CupertinoPageRoute(builder: (_) => const ProfileSettingsScreen())),
                   ),
                 ],
               ),
