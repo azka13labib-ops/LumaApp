@@ -52,12 +52,12 @@ class _DownloadBtn extends ConsumerWidget {
         icon: isDownloading
             ? CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: LumaColors.accent,
+                color: Colors.white,
                 value: progress?.clamp(0.0, 1.0),
               )
             : Icon(
                 isCached ? Icons.download_done_rounded : Icons.download_rounded,
-                color: isCached ? LumaColors.accent : Colors.white,
+                color: isCached ? Colors.white : Colors.white60,
                 size: 26,
               ),
         onPressed: () async {
@@ -379,8 +379,8 @@ class PlayerScreen extends ConsumerWidget {
                                 : Icons.favorite_border_rounded,
                             key: ValueKey(state.isFavorite),
                             color: state.isFavorite
-                                ? LumaColors.accent
-                                : Colors.white,
+                                ? Colors.white
+                                : Colors.white60,
                             size: 26,
                           ),
                         ),
@@ -504,7 +504,7 @@ class PlayerScreen extends ConsumerWidget {
                     _ControlBtn(
                       icon: Icons.shuffle_rounded,
                       size: 24,
-                      color: shuffleActive ? LumaColors.accent : Colors.white70,
+                      color: shuffleActive ? Colors.white : Colors.white38,
                       onTap: () =>
                           ref.read(playerProvider.notifier).toggleShuffle(),
                       badge: shuffleActive,
@@ -525,11 +525,11 @@ class PlayerScreen extends ConsumerWidget {
                         width: 66,
                         height: 66,
                         decoration: BoxDecoration(
-                          color: LumaColors.accent,
+                          color: Colors.white,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: LumaColors.accent.withValues(alpha: 0.35),
+                              color: Colors.white.withValues(alpha: 0.25),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -566,7 +566,7 @@ class PlayerScreen extends ConsumerWidget {
                     _ControlBtn(
                       icon: _repeatIcon(state.repeatMode),
                       size: 24,
-                      color: repeatActive ? LumaColors.accent : Colors.white70,
+                      color: repeatActive ? Colors.white : Colors.white38,
                       onTap: () =>
                           ref.read(playerProvider.notifier).cycleRepeat(),
                       badge: repeatActive,
@@ -614,7 +614,7 @@ SnackBar _modernSnack(String msg, {Duration? duration, bool isError = false}) {
       children: [
         Icon(
           isError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
-          color: isError ? Colors.red.shade300 : LumaColors.accent,
+          color: isError ? Colors.red.shade300 : Colors.white,
           size: 20,
         ),
         const SizedBox(width: 12),
@@ -667,8 +667,8 @@ class _ControlBtn extends StatelessWidget {
                 child: Container(
                   width: 4,
                   height: 4,
-                  decoration: BoxDecoration(
-                    color: LumaColors.accent,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
                     shape: BoxShape.circle,
                   ),
                 ),
