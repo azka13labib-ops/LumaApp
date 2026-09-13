@@ -151,8 +151,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     const bgColor = Color(0xFFFFFFFF);
     const textPrimary = Color(0xFF111111);
-    const primaryBlue = Color(0xFF1C4ED8);
-    const primaryBlueLight = Color(0xFF3B82F6);
+    const primaryObsidian = Color(0xFF09090B);
+    const primaryCharcoal = Color(0xFF27272A);
     final forcedTheme = AppTheme.light;
 
     final items = <Widget>[
@@ -257,7 +257,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 HapticFeedback.selectionClick();
                 setState(() => _agreedToTerms = val ?? false);
               },
-              activeColor: primaryBlue,
+              activeColor: primaryObsidian,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.5),
             ),
@@ -269,9 +269,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 style: TextStyle(color: Color(0xFF6B7280), fontSize: 13, fontWeight: FontWeight.w400),
                 children: [
                   TextSpan(text: 'I agree to the '),
-                  TextSpan(text: 'Terms & Conditions', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.w600)),
+                  TextSpan(text: 'Terms & Conditions', style: TextStyle(color: primaryObsidian, fontWeight: FontWeight.w600)),
                   TextSpan(text: ' and '),
-                  TextSpan(text: 'Privacy Policy', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.w600)),
+                  TextSpan(text: 'Privacy Policy', style: TextStyle(color: primaryObsidian, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -282,7 +282,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
       _AnimatedGradientButton(
         onPressed: (_isLoading || _success) ? null : _register,
-        colors: const [primaryBlueLight, primaryBlue],
+        colors: const [primaryCharcoal, primaryObsidian],
         textColor: Colors.white,
         child: _isLoading
             ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
@@ -400,12 +400,12 @@ class _PillTextFieldState extends State<_PillTextField> {
         color: _isFocused ? Colors.white : const Color(0xFFF9FAFB),
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
-          color: _isFocused ? const Color(0xFF1C4ED8) : Colors.transparent,
+          color: _isFocused ? const Color(0xFF18181B) : Colors.transparent,
           width: _isFocused ? 1.5 : 0.0,
         ),
         boxShadow: _isFocused ? [
           BoxShadow(
-            color: const Color(0xFF1C4ED8).withValues(alpha: 0.1),
+            color: const Color(0xFF18181B).withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 4),
           )
@@ -418,7 +418,7 @@ class _PillTextFieldState extends State<_PillTextField> {
         keyboardType: widget.keyboardType,
         autofillHints: widget.autofillHints,
         style: const TextStyle(color: Color(0xFF111111), fontSize: 15, fontWeight: FontWeight.w500),
-        cursorColor: const Color(0xFF1C4ED8),
+        cursorColor: const Color(0xFF18181B),
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontWeight: FontWeight.w400, fontSize: 15),
