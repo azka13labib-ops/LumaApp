@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:palette_generator/palette_generator.dart';
 
 import '../../../../core/providers/player_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/offline_cache_service.dart';
+import '../../../../core/widgets/animated_heart_button.dart';
+import '../../../../core/widgets/interactive_scale_button.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
 import '../widgets/lyrics_sheet.dart';
 import '../widgets/queue_sheet.dart';
@@ -223,89 +226,106 @@ class PlayerScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: LumaColors.darkBg,
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [bgColor, LumaColors.darkBg],
-            stops: const [0.0, 0.55],
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onVerticalDragEnd: (details) {
+          final vy = details.primaryVelocity ?? 0;
+          if (vy > 280) {
+            HapticFeedback.lightImpact();
+            Navigator.maybePop(context);
+          }
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [bgColor, LumaColors.darkBg],
+              stops: const [0.0, 0.55],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // ── AppBar ──────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white, size: 32),
-                      onPressed: () => Navigator.pop(context),
-                      tooltip: 'Tutup',
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Sedang diputar',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
+          child: SafeArea(
+            child: Column(
+              children: [
+                // ── AppBar ──────────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white, size: 32),
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: 'Tutup',
+                      ),
+                      const Expanded(
+                        child: Text(
+                          'Sedang diputar',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.more_vert_rounded,
-                          color: Colors.white, size: 24),
-                      onPressed: () => _showMore(context, ref, state),
-                      tooltip: 'Opsi lainnya',
-                    ),
-                  ],
-                ),
-              ),
-
-              const Spacer(),
-
-              // ── Artwork ────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: AnimatedScale(
-                  scale: state.isPlaying ? 1.0 : 0.92,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
+                      IconButton(
+                        icon: const Icon(Icons.more_vert_rounded,
+                            color: Colors.white, size: 24),
+                        onPressed: () => _showMore(context, ref, state),
+                        tooltip: 'Opsi lainnya',
                       ),
-                      child: Hero(
-                        tag: 'player_artwork_${item.id}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: item.thumbnailUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: const Color(0xFF1A1A1A),
+                    ],
+                  ),
+                ),
+
+                const Spacer(),
+
+                // ── Artwork with Breathing Vinyl scale & ambient glow ─────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: AnimatedScale(
+                    scale: state.isPlaying ? 1.0 : 0.91,
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: state.isPlaying
+                                  ? bgColor.withValues(alpha: 0.55)
+                                  : Colors.black.withValues(alpha: 0.25),
+                              blurRadius: state.isPlaying ? 36 : 16,
+                              offset: Offset(0, state.isPlaying ? 14 : 6),
                             ),
-                            errorWidget: (context, url, error) => Container(
-                              color: const Color(0xFF1A1A1A),
-                              child: const Icon(Icons.music_note_rounded,
-                                  color: Colors.white24, size: 64),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Hero(
+                          tag: 'player_artwork_${item.id}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: item.thumbnailUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: const Color(0xFF1A1A1A),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: const Color(0xFF1A1A1A),
+                                child: const Icon(Icons.music_note_rounded,
+                                    color: Colors.white24, size: 64),
+                              ),
                             ),
                           ),
                         ),
@@ -313,7 +333,6 @@ class PlayerScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-              ),
 
               const Spacer(),
 
@@ -363,33 +382,13 @@ class PlayerScreen extends ConsumerWidget {
                     const SizedBox(width: 8),
                     const _DownloadBtn(),
                     const SizedBox(width: 4),
-                    // 48×48 Like
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        icon: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          transitionBuilder: (child, anim) =>
-                              ScaleTransition(scale: anim, child: child),
-                          child: Icon(
-                            state.isFavorite
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            key: ValueKey(state.isFavorite),
-                            color: state.isFavorite
-                                ? Colors.white
-                                : Colors.white60,
-                            size: 26,
-                          ),
-                        ),
-                        onPressed: () =>
-                            ref.read(playerProvider.notifier).toggleFavorite(),
-                        tooltip: state.isFavorite
-                            ? 'Hapus dari favorit'
-                            : 'Tambah ke favorit',
-                      ),
+                    // Animated Bouncy Like
+                    AnimatedHeartButton(
+                      isLiked: state.isFavorite,
+                      size: 26,
+                      activeColor: Colors.white,
+                      inactiveColor: Colors.white60,
+                      onTap: () => ref.read(playerProvider.notifier).toggleFavorite(),
                     ),
                   ],
                 ),
@@ -517,8 +516,9 @@ class PlayerScreen extends ConsumerWidget {
                       onTap: () =>
                           ref.read(playerProvider.notifier).previous(),
                     ),
-                    // Play/Pause (Central Hero focal point)
-                    GestureDetector(
+                    // Play/Pause (Central Hero focal point with spring bounce)
+                    InteractiveScaleButton(
+                      pressedScale: 0.88,
                       onTap: () =>
                           ref.read(playerProvider.notifier).togglePlayPause(),
                       child: Container(
@@ -529,8 +529,8 @@ class PlayerScreen extends ConsumerWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              blurRadius: 16,
+                              color: Colors.white.withValues(alpha: 0.35),
+                              blurRadius: 18,
                               offset: const Offset(0, 4),
                             ),
                           ],
@@ -577,7 +577,8 @@ class PlayerScreen extends ConsumerWidget {
 
               const SizedBox(height: 24),
 
-              // -- Secondary actions --
+              // ── Secondary Actions (Lirik, Antrean) ───────────────────────
+              const Spacer(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -603,8 +604,9 @@ class PlayerScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 SnackBar _modernSnack(String msg, {Duration? duration, bool isError = false}) {
@@ -633,7 +635,7 @@ SnackBar _modernSnack(String msg, {Duration? duration, bool isError = false}) {
   );
 }
 
-/// Compact icon button with guaranteed 48×48 touch target.
+/// Compact icon button with guaranteed 48×48 touch target and spring bounce.
 class _ControlBtn extends StatelessWidget {
   const _ControlBtn({
     required this.icon,
@@ -651,9 +653,9 @@ class _ControlBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InteractiveScaleButton(
+      pressedScale: 0.86,
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: 48,
         height: 48,

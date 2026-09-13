@@ -235,6 +235,20 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
 
+  void playNext(MusicItem item) {
+    if (state.queue.isEmpty) {
+      play([item], 0);
+      return;
+    }
+    final q = List<MusicItem>.from(state.queue);
+    final insertIndex = (state.currentIndex + 1).clamp(0, q.length);
+    q.insert(insertIndex, item);
+    if (!state.isShuffled) {
+      _orderBackup = List<MusicItem>.from(q);
+    }
+    state = state.copyWith(queue: q);
+  }
+
   void addToQueue(MusicItem item) {
     if (state.queue.isEmpty) {
       play([item], 0);

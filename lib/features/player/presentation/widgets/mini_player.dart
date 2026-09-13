@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/animated_heart_button.dart';
+import '../../../../core/widgets/interactive_scale_button.dart';
 import '../screens/player_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -140,65 +142,50 @@ class MiniPlayer extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        // Like: 44x44 touch target with haptic feedback
-                        SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: Icon(
-                              ps.isFavorite
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              color: ps.isFavorite
-                                  ? accentColor
-                                  : inactiveIconColor,
-                              size: 20,
+                        // Like: bouncy animated heart
+                        AnimatedHeartButton(
+                          isLiked: ps.isFavorite,
+                          size: 20,
+                          activeColor: const Color(0xFFEF4444),
+                          inactiveColor: inactiveIconColor,
+                          onTap: () => ref.read(playerProvider.notifier).toggleFavorite(),
+                        ),
+                        // Play/Pause: bouncy spring press
+                        InteractiveScaleButton(
+                          pressedScale: 0.85,
+                          onTap: () => ref.read(playerProvider.notifier).togglePlayPause(),
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Center(
+                              child: ps.isLoading
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: isDark ? Colors.white54 : LumaColors.lightTextSecondary))
+                                  : Icon(
+                                      ps.isPlaying
+                                          ? Icons.pause_rounded
+                                          : Icons.play_arrow_rounded,
+                                      color: textPrimary,
+                                      size: 28,
+                                    ),
                             ),
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              ref.read(playerProvider.notifier).toggleFavorite();
-                            },
                           ),
                         ),
-                        // Play/Pause: 44x44 touch target with haptic feedback
-                        SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: ps.isLoading
-                                ? SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: isDark ? Colors.white54 : LumaColors.lightTextSecondary))
-                                : Icon(
-                                    ps.isPlaying
-                                        ? Icons.pause_rounded
-                                        : Icons.play_arrow_rounded,
-                                    color: textPrimary,
-                                    size: 28,
-                                  ),
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              ref.read(playerProvider.notifier).togglePlayPause();
-                            },
-                          ),
-                        ),
-                        // Next with haptic feedback
-                        SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: Icon(Icons.skip_next_rounded,
-                                color: inactiveIconColor, size: 24),
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              ref.read(playerProvider.notifier).next();
-                            },
+                        // Next with bouncy spring press
+                        InteractiveScaleButton(
+                          pressedScale: 0.88,
+                          onTap: () => ref.read(playerProvider.notifier).next(),
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Center(
+                              child: Icon(Icons.skip_next_rounded,
+                                  color: inactiveIconColor, size: 24),
+                            ),
                           ),
                         ),
                       ],

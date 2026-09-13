@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-
 class PlayShuffleBar extends StatelessWidget {
   const PlayShuffleBar({
     super.key,
@@ -14,6 +12,9 @@ class PlayShuffleBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
@@ -21,7 +22,8 @@ class PlayShuffleBar extends StatelessWidget {
           Expanded(
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: LumaColors.accent,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
@@ -35,8 +37,8 @@ class PlayShuffleBar extends StatelessWidget {
           const SizedBox(width: 12),
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: const BorderSide(color: Colors.white24),
+              foregroundColor: textPrimary,
+              side: BorderSide(color: theme.dividerColor),
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),

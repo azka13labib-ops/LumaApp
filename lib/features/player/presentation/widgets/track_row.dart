@@ -7,6 +7,8 @@ import '../../../../core/providers/player_provider.dart';
 import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/animated_equalizer_bars.dart';
+import '../../../../core/widgets/interactive_scale_button.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
 import '../../../search/presentation/widgets/playlist_picker_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -31,46 +33,88 @@ class TrackRow extends ConsumerWidget {
     final textPrimary = isDark ? LumaColors.darkTextPrimary : LumaColors.lightTextPrimary;
     final textSecondary = isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary;
 
-    return InkWell(
+    final playerState = ref.watch(playerProvider);
+    final isCurrent = playerState.current?.id == item.id;
+    final isPlaying = isCurrent && playerState.isPlaying;
+
+    return InteractiveScaleButton(
+      pressedScale: 0.94,
       onTap: onTap,
+      onLongPress: () => _showTrackMenu(context, ref, item),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: CachedNetworkImage(
-                imageUrl: item.thumbnailUrl,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: CachedNetworkImage(
+                    imageUrl: item.thumbnailUrl,
                     width: 48,
                     height: 48,
-                    color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      width: 48,
+                      height: 48,
+                      color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      width: 48,
+                      height: 48,
+                      color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
+                      child: Icon(Icons.music_note,
+                          color: isDark ? Colors.white30 : LumaColors.lightTextMuted, size: 20),
+                    ),
+                  ),
                 ),
-                errorWidget: (context, url, error) => Container(
+                if (isCurrent)
+                  Container(
                     width: 48,
                     height: 48,
-                    color: isDark ? LumaColors.darkSurface : LumaColors.lightSurface,
-                    child: Icon(Icons.music_note, color: isDark ? Colors.white30 : LumaColors.lightTextMuted, size: 20)),
-              ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Center(
+                      child: AnimatedEqualizerBars(
+                        isPlaying: isPlaying,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title,
-                      style: TextStyle(
-                          color: textPrimary, fontWeight: FontWeight.w600, fontSize: 15),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      color: isCurrent
+                          ? (isDark ? Colors.white : const Color(0xFF09090B))
+                          : textPrimary,
+                      fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 4),
-                  Text(item.author,
-                      style: TextStyle(color: textSecondary, fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    item.author,
+                    style: TextStyle(
+                      color: isCurrent ? textPrimary : textSecondary,
+                      fontSize: 13,
+                      fontWeight: isCurrent ? FontWeight.w500 : FontWeight.normal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
@@ -79,7 +123,8 @@ class TrackRow extends ConsumerWidget {
             if (!showDownload)
               trailing ??
                   IconButton(
-                    icon: Icon(Icons.more_vert_rounded, color: isDark ? Colors.white54 : LumaColors.lightTextSecondary, size: 20),
+                    icon: Icon(Icons.more_vert_rounded,
+                        color: isDark ? Colors.white54 : LumaColors.lightTextSecondary, size: 20),
                     onPressed: () => _showTrackMenu(context, ref, item),
                   ),
           ],
@@ -171,6 +216,28 @@ class TrackRow extends ConsumerWidget {
               ),
             ),
             Divider(color: dividerColor, height: 1),
+            ListTile(
+              leading: Icon(Icons.playlist_play_rounded, color: iconColor),
+              title: Text('Putar Berikutnya', style: TextStyle(color: textPrimary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                ref.read(playerProvider.notifier).playNext(item);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  _modernSnack('Akan diputar berikutnya', isError: false),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.queue_music_rounded, color: iconColor),
+              title: Text('Tambahkan ke Antrean', style: TextStyle(color: textPrimary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                ref.read(playerProvider.notifier).addToQueue(item);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  _modernSnack('Ditambahkan ke antrean', isError: false),
+                );
+              },
+            ),
             ListTile(
               leading: Icon(Icons.playlist_add_rounded, color: iconColor),
               title: Text('Tambah ke Playlist', style: TextStyle(color: textPrimary)),

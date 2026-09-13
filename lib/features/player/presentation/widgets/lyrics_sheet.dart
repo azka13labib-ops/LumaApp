@@ -167,7 +167,7 @@ class _Empty extends StatelessWidget {
           const SizedBox(height: 16),
           TextButton(
             onPressed: onRetry,
-            child: const Text('Coba lagi', style: TextStyle(color: LumaColors.accent)),
+            child: const Text('Coba lagi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
           ),
         ],
       ],
