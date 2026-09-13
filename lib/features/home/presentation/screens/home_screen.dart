@@ -9,8 +9,9 @@ import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../../core/widgets/interactive_scale_button.dart';
-import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../profile/presentation/screens/profile_settings_screen.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
+import 'package:flutter/cupertino.dart';
 import '../../../../features/player/presentation/widgets/track_row.dart';
 import '../../../../core/widgets/luma_list_skeleton.dart';
 
@@ -234,7 +235,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   InkWell(
                     borderRadius: BorderRadius.circular(18),
                     onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                        CupertinoPageRoute(builder: (_) => const ProfileSettingsScreen())),
                     child: CircleAvatar(
                       radius: 18,
                       backgroundColor: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
