@@ -48,6 +48,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final memberSince = _memberSince(user?.createdAt);
 
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
     final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
 
@@ -64,7 +65,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
             CircleAvatar(
               radius: 50,
-              backgroundColor: LumaColors.accent.withValues(alpha: 0.2),
+              backgroundColor: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
               child: Text(initial, style: TextStyle(color: textPrimary, fontSize: 40, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 16),
@@ -82,12 +83,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: LumaColors.accent.withValues(alpha: 0.12),
+                  color: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   memberSince,
-                  style: const TextStyle(color: LumaColors.accent, fontSize: 12, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ),
             ],

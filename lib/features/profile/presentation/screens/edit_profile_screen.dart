@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/theme/app_theme.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String currentDisplayName;
@@ -66,13 +65,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Edit Profil', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Edit Profil', style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -81,10 +84,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Nama Tampilan',
               style: TextStyle(
-                color: LumaColors.darkTextSecondary,
+                color: textSecondary,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -92,20 +95,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              cursorColor: LumaColors.accent,
+              style: TextStyle(color: textPrimary, fontSize: 16),
+              cursorColor: theme.colorScheme.primary,
               decoration: InputDecoration(
                 hintText: 'Masukkan nama kamu',
-                hintStyle: const TextStyle(color: LumaColors.darkTextSecondary),
+                hintStyle: TextStyle(color: textSecondary),
                 filled: true,
-                fillColor: LumaColors.darkSurface,
+                fillColor: theme.colorScheme.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: LumaColors.accent, width: 1.5),
+                  borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
@@ -117,14 +120,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: LumaColors.accent,
-                  foregroundColor: Colors.white,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   elevation: 0,
-                  disabledBackgroundColor: const Color(0xFF003399),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: _isLoading
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                    ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: theme.colorScheme.onPrimary, strokeWidth: 2.5))
                     : const Text('Simpan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
               ),
             ),
