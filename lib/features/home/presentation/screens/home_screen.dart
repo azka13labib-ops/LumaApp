@@ -172,6 +172,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return 'Selamat Malam';
   }
 
+  String _greetingSubtitle() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Mulai harimu dengan musik 🎵';
+    if (hour < 15) return 'Temani siangmu dengan lagu favoritmu';
+    if (hour < 19) return 'Santai sore sambil dengerin musik 🎧';
+    return 'Malam yang asyik dengan musik pilihanmu ✨';
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = _supabase.auth.currentUser;
@@ -219,29 +227,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             // Top bar with greeting + avatar
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _greeting(),
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _greeting(),
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _greetingSubtitle(),
+                        style: TextStyle(
+                          color: theme.textTheme.labelSmall?.color ?? Colors.grey,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(18),
+                  GestureDetector(
                     onTap: () => Navigator.push(context,
                         CupertinoPageRoute(builder: (_) => const ProfileSettingsScreen())),
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
-                      child: Text(
-                        initial,
-                        style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          initial,
+                          style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ),
