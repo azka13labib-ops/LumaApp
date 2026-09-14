@@ -101,6 +101,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                       decoration: BoxDecoration(
                         color: surfaceColor,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: theme.dividerColor.withOpacity(0.08)),
                       ),
                       child: Row(
                         children: [
@@ -495,9 +496,16 @@ class _SettingsGroup extends StatelessWidget {
       decoration: BoxDecoration(
         color: surfaceColor,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.08)),
       ),
-      child: Column(
-        children: children,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: Column(
+            children: children,
+          ),
+        ),
       ),
     );
   }
@@ -526,53 +534,47 @@ class _SettingsTile extends StatelessWidget {
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
     final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.vertical(
-          bottom: isLast ? const Radius.circular(16) : Radius.zero,
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.only(left: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: iconColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Container(
                 decoration: BoxDecoration(
-                  color: iconColor,
-                  borderRadius: BorderRadius.circular(8),
+                  border: isLast ? null : Border(
+                    bottom: BorderSide(color: theme.dividerColor.withOpacity(0.2), width: 0.5)
+                  ),
                 ),
-                child: Icon(icon, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: isLast ? null : Border(
-                      bottom: BorderSide(color: theme.dividerColor.withOpacity(0.5), width: 0.5)
+                padding: const EdgeInsets.only(right: 16, top: 14, bottom: 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
                     ),
-                  ),
-                  padding: const EdgeInsets.only(bottom: 12, top: 2),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
+                    const SizedBox(width: 8),
+                    if (value != null)
+                      Flexible(
+                        child: Text(value!, style: TextStyle(color: textSecondary, fontSize: 15), overflow: TextOverflow.ellipsis),
                       ),
-                      const SizedBox(width: 8),
-                      if (value != null)
-                        Flexible(
-                          child: Text(value!, style: TextStyle(color: textSecondary, fontSize: 15), overflow: TextOverflow.ellipsis),
-                        ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.chevron_right_rounded, color: textSecondary.withOpacity(0.5), size: 20),
-                    ],
-                  ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded, color: textSecondary.withOpacity(0.5), size: 20),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -601,44 +603,47 @@ class _SettingsToggle extends StatelessWidget {
     final theme = Theme.of(context);
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: Colors.white, size: 18),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Container(
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Container(
+        padding: const EdgeInsets.only(left: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
-                border: isLast ? null : Border(
-                  bottom: BorderSide(color: theme.dividerColor.withOpacity(0.5), width: 0.5)
+                color: iconColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  border: isLast ? null : Border(
+                    bottom: BorderSide(color: theme.dividerColor.withOpacity(0.2), width: 0.5)
+                  ),
+                ),
+                padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
+                    ),
+                    const SizedBox(width: 8),
+                    CupertinoSwitch(
+                      value: value,
+                      activeColor: theme.colorScheme.primary,
+                      onChanged: onChanged,
+                    ),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.only(bottom: 8, top: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
-                  ),
-                  const SizedBox(width: 8),
-                  CupertinoSwitch(
-                    value: value,
-                    activeColor: theme.colorScheme.primary,
-                    onChanged: onChanged,
-                  ),
-                ],
-              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
