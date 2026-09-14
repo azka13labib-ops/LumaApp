@@ -649,7 +649,7 @@ class _HeroCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       onTap: onTap,
       child: Container(
-        height: 240,
+        height: 200,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -688,7 +688,7 @@ class _HeroCard extends StatelessWidget {
                 item.title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 26,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
                   height: 1.2,
