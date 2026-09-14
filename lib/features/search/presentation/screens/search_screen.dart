@@ -213,7 +213,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 decoration: BoxDecoration(
                   color: surfaceColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+                  border: Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -230,13 +230,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           padding: const EdgeInsets.only(left: 16),
                           child: Row(
                             children: [
-                              Icon(Icons.history_rounded, size: 18, color: textSecondary.withOpacity(0.7)),
+                              Icon(Icons.history_rounded, size: 18, color: textSecondary.withValues(alpha: 0.7)),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Container(
                                   decoration: BoxDecoration(
                                     border: isLast ? null : Border(
-                                      bottom: BorderSide(color: theme.dividerColor.withOpacity(0.15), width: 0.5),
+                                      bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.15), width: 0.5),
                                     ),
                                   ),
                                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -246,7 +246,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                         child: Text(q, style: TextStyle(color: textPrimary, fontSize: 15)),
                                       ),
                                       IconButton(
-                                        icon: Icon(Icons.close_rounded, size: 16, color: textSecondary.withOpacity(0.5)),
+                                        icon: Icon(Icons.close_rounded, size: 16, color: textSecondary.withValues(alpha: 0.5)),
                                         onPressed: () => setState(() => _searchHistory.remove(q)),
                                         padding: const EdgeInsets.all(4),
                                         constraints: const BoxConstraints(),
@@ -278,7 +278,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 return ActionChip(
                   avatar: Icon(Icons.trending_up_rounded, size: 16, color: theme.colorScheme.primary),
                   backgroundColor: surfaceColor,
-                  side: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
+                  side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
                   label: Text(s, style: TextStyle(color: textPrimary, fontSize: 13)),
                   onPressed: () {
                     HapticFeedback.selectionClick();

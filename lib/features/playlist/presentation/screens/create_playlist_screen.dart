@@ -53,6 +53,13 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
+        try {
+          await Supabase.instance.client.from('user_profiles').upsert({
+            'id': user.id,
+            'username': user.userMetadata?['username'] ?? user.email?.split('@').first ?? 'User',
+            'avatar_url': user.userMetadata?['avatar_url'] ?? '',
+          });
+        } catch (_) {}
         String? coverUrl;
         if (_coverImage != null && _coverBytes != null) {
           final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -117,13 +124,18 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Divider(height: 1, color: theme.dividerColor),
-
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Divider(height: 1, color: theme.dividerColor),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: false,
             child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
+                  child: Column(
               children: [
                 GestureDetector(
                   onTap: _pickImage,
@@ -270,6 +282,9 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                         ),
                       ),
               ),
+            ),
+          ),
+              ],
             ),
           ),
         ],

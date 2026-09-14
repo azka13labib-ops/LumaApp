@@ -110,7 +110,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                       decoration: BoxDecoration(
                         color: surfaceColor,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: theme.dividerColor.withOpacity(0.08)),
+                        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.08)),
                       ),
                       child: Row(
                         children: [
@@ -142,7 +142,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right_rounded, color: textSecondary.withOpacity(0.5)),
+                          Icon(Icons.chevron_right_rounded, color: textSecondary.withValues(alpha: 0.5)),
                         ],
                       ),
                     ),
@@ -287,6 +287,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
+    final navigator = Navigator.of(context);
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
@@ -309,8 +310,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     if (confirmed == true && mounted) {
       await Supabase.instance.client.auth.signOut();
       if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
+        navigator.pushAndRemoveUntil(
           CupertinoPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
         );
@@ -505,7 +505,7 @@ class _SettingsGroup extends StatelessWidget {
       decoration: BoxDecoration(
         color: surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.08)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.08)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -563,7 +563,7 @@ class _SettingsTile extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   border: isLast ? null : Border(
-                    bottom: BorderSide(color: theme.dividerColor.withOpacity(0.2), width: 0.5)
+                    bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2), width: 0.5)
                   ),
                 ),
                 padding: const EdgeInsets.only(right: 16, top: 14, bottom: 14),
@@ -578,7 +578,7 @@ class _SettingsTile extends StatelessWidget {
                         child: Text(value!, style: TextStyle(color: textSecondary, fontSize: 15), overflow: TextOverflow.ellipsis),
                       ),
                     const SizedBox(width: 4),
-                    Icon(Icons.chevron_right_rounded, color: textSecondary.withOpacity(0.5), size: 20),
+                    Icon(Icons.chevron_right_rounded, color: textSecondary.withValues(alpha: 0.5), size: 20),
                   ],
                 ),
               ),
@@ -632,7 +632,7 @@ class _SettingsToggle extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   border: isLast ? null : Border(
-                    bottom: BorderSide(color: theme.dividerColor.withOpacity(0.2), width: 0.5)
+                    bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2), width: 0.5)
                   ),
                 ),
                 padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
@@ -644,7 +644,7 @@ class _SettingsToggle extends StatelessWidget {
                     const SizedBox(width: 8),
                     CupertinoSwitch(
                       value: value,
-                      activeColor: theme.colorScheme.primary,
+                      activeTrackColor: theme.colorScheme.primary,
                       onChanged: onChanged,
                     ),
                   ],

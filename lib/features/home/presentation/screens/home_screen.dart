@@ -14,6 +14,7 @@ import '../../../search/presentation/screens/artist_screen.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../../features/player/presentation/widgets/track_row.dart';
 import '../../../../core/widgets/luma_list_skeleton.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -265,7 +266,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         shape: BoxShape.circle,
                         color: isDark ? const Color(0xFF27272A) : LumaColors.lightBorder,
                         border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
                           width: 2,
                         ),
                       ),
@@ -412,7 +413,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _HeroCard(_recentlyPlayed.first, onTap: () {
                     ref.read(playerProvider.notifier).play(_recentlyPlayed, 0);
-                  }),
+                  }).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
                 ),
                 const SizedBox(height: 16),
                 
@@ -425,7 +426,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       itemCount: _recentlyPlayed.length - 1,
                       itemBuilder: (context, i) => _HorizontalCard(_recentlyPlayed[i + 1], onTap: () {
                         ref.read(playerProvider.notifier).play(_recentlyPlayed, i + 1);
-                      }),
+                      }).animate(delay: (i * 100).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
                     ),
                   ),
                 const SizedBox(height: 32),
@@ -441,7 +442,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _HeroCard(_recommendedSongs.first, onTap: () {
                     ref.read(playerProvider.notifier).play(_recommendedSongs, 0);
-                  }),
+                  }).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
                 ),
                 const SizedBox(height: 16),
                 if (_recommendedSongs.length > 1)
@@ -453,7 +454,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       itemCount: (_recommendedSongs.length - 1).clamp(0, 8),
                       itemBuilder: (context, i) => _HorizontalCard(_recommendedSongs[i + 1], onTap: () {
                         ref.read(playerProvider.notifier).play(_recommendedSongs, i + 1);
-                      }),
+                      }).animate(delay: (i * 100).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
                     ),
                   ),
                 const SizedBox(height: 32),
@@ -474,7 +475,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     itemCount: _likedSongs.length,
                     itemBuilder: (context, i) => _HorizontalCard(_likedSongs[i], onTap: () {
                       ref.read(playerProvider.notifier).play(_likedSongs, i);
-                    }),
+                    }).animate(delay: (i * 100).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -520,7 +521,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Positioned(
                                 right: -16,
                                 bottom: -16,
-                                child: Icon(Icons.music_note_rounded, size: 80, color: Colors.white.withOpacity(0.15)),
+                                child: Icon(Icons.music_note_rounded, size: 80, color: Colors.white.withValues(alpha: 0.15)),
                               ),
                               Padding(
                                 padding: const EdgeInsets.all(12),
@@ -558,7 +559,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ],
                           ),
                         ),
-                      );
+                      ).animate(delay: (i * 100).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutQuad);
                     },
                   ),
                 ),
@@ -611,7 +612,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       item: item,
                       onTap: () => ref.read(playerProvider.notifier).play(_recommendedSongs, idx),
                       showDownload: true,
-                    );
+                    ).animate(delay: (i * 50).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutQuad);
                   },
                 )
               else
@@ -666,7 +667,7 @@ class _HorizontalCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -720,7 +721,7 @@ class _HeroCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -738,8 +739,8 @@ class _HeroCard extends StatelessWidget {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                Colors.black.withOpacity(0.2),
-                Colors.black.withOpacity(0.8),
+                Colors.black.withValues(alpha: 0.2),
+                Colors.black.withValues(alpha: 0.8),
               ],
               stops: const [0.4, 0.7, 1.0],
             ),
