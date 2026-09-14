@@ -397,7 +397,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 const SizedBox(height: 32),
+              ] else if (_recommendedSongs.isNotEmpty) ...[
+                // Fallback: tampilkan recommended sebagai hero + horizontal cards
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('Baru saja didengar',
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _HeroCard(_recommendedSongs.first, onTap: () {
+                    ref.read(playerProvider.notifier).play(_recommendedSongs, 0);
+                  }),
+                ),
+                const SizedBox(height: 16),
+                if (_recommendedSongs.length > 1)
+                  SizedBox(
+                    height: 200,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: (_recommendedSongs.length - 1).clamp(0, 8),
+                      itemBuilder: (context, i) => _HorizontalCard(_recommendedSongs[i + 1], onTap: () {
+                        ref.read(playerProvider.notifier).play(_recommendedSongs, i + 1);
+                      }),
+                    ),
+                  ),
+                const SizedBox(height: 32),
               ],
+
 
               if (_likedSongs.isNotEmpty) ...[
                 Padding(
@@ -538,12 +567,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _recommendedSongs.length,
+                  // Kalau recentlyPlayed kosong, lagu[0] sudah tampil di hero card — lewati
+                  itemCount: _recentlyPlayed.isEmpty
+                      ? (_recommendedSongs.length - 1).clamp(0, _recommendedSongs.length)
+                      : _recommendedSongs.length,
                   itemBuilder: (context, i) {
-                    final item = _recommendedSongs[i];
+                    final idx = _recentlyPlayed.isEmpty ? i + 1 : i;
+                    if (idx >= _recommendedSongs.length) return const SizedBox.shrink();
+                    final item = _recommendedSongs[idx];
                     return TrackRow(
                       item: item,
-                      onTap: () => ref.read(playerProvider.notifier).play(_recommendedSongs, i),
+                      onTap: () => ref.read(playerProvider.notifier).play(_recommendedSongs, idx),
                       showDownload: true,
                     );
                   },
