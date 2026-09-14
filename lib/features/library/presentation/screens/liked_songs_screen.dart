@@ -5,6 +5,7 @@ import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../player/presentation/widgets/play_shuffle_bar.dart';
 import '../../../player/presentation/widgets/track_row.dart';
+import '../../../player/presentation/widgets/mini_player.dart';
 
 class LikedSongsScreen extends ConsumerWidget {
   const LikedSongsScreen({super.key, required this.songs});
@@ -15,9 +16,16 @@ class LikedSongsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final textSecondary = isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary;
+    final hasTrack = ref.watch(playerProvider.select((s) => s.hasTrack));
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      bottomNavigationBar: hasTrack
+          ? const SafeArea(
+              top: false,
+              child: MiniPlayer(),
+            )
+          : null,
       body: CustomScrollView(
         slivers: [
           // ── Header ──
@@ -96,7 +104,7 @@ class LikedSongsScreen extends ConsumerWidget {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.only(bottom: 160),
+              padding: EdgeInsets.only(bottom: hasTrack ? 24 : 40),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {

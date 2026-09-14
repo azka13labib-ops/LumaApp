@@ -7,6 +7,7 @@ import '../../../../core/services/youtube_service.dart';
 import '../../../../core/providers/player_provider.dart';
 import '../../../player/presentation/widgets/play_shuffle_bar.dart';
 import '../../../player/presentation/widgets/track_row.dart';
+import '../../../player/presentation/widgets/mini_player.dart';
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   const PlaylistDetailScreen({super.key, required this.playlist});
@@ -92,9 +93,16 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
     final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
+    final hasTrack = ref.watch(playerProvider.select((s) => s.hasTrack));
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      bottomNavigationBar: hasTrack
+          ? const SafeArea(
+              top: false,
+              child: MiniPlayer(),
+            )
+          : null,
       body: CustomScrollView(
         slivers: [
           // ── Header ──
@@ -204,7 +212,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.only(bottom: 160),
+              padding: EdgeInsets.only(bottom: hasTrack ? 24 : 40),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {

@@ -7,6 +7,7 @@ import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../player/presentation/widgets/mini_player.dart';
 
 class DownloadsScreen extends ConsumerStatefulWidget {
   const DownloadsScreen({super.key});
@@ -63,9 +64,16 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
     final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
+    final hasTrack = ref.watch(playerProvider.select((s) => s.hasTrack));
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      bottomNavigationBar: hasTrack
+          ? const SafeArea(
+              top: false,
+              child: MiniPlayer(),
+            )
+          : null,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

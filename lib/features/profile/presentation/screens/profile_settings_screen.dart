@@ -10,6 +10,8 @@ import '../../../../core/widgets/interactive_scale_button.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../library/presentation/screens/downloads_screen.dart';
 import 'edit_profile_screen.dart';
+import '../../../../core/providers/player_provider.dart';
+import '../../../player/presentation/widgets/mini_player.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -61,9 +63,16 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
     final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
     final surfaceColor = isDark ? const Color(0xFF1C1C1E) : Colors.white; 
     final scaffoldBg = isDark ? Colors.black : const Color(0xFFF2F2F7);
+    final hasTrack = ref.watch(playerProvider.select((s) => s.hasTrack));
 
     return Scaffold(
       backgroundColor: scaffoldBg,
+      bottomNavigationBar: hasTrack
+          ? const SafeArea(
+              top: false,
+              child: MiniPlayer(),
+            )
+          : null,
       appBar: AppBar(
         backgroundColor: scaffoldBg,
         surfaceTintColor: Colors.transparent,

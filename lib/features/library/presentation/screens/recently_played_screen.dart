@@ -7,6 +7,7 @@ import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/luma_list_skeleton.dart';
 import '../../../../features/player/presentation/widgets/track_row.dart';
+import '../../../player/presentation/widgets/mini_player.dart';
 
 class RecentlyPlayedScreen extends ConsumerStatefulWidget {
   const RecentlyPlayedScreen({super.key});
@@ -70,6 +71,7 @@ class _RecentlyPlayedScreenState extends ConsumerState<RecentlyPlayedScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
+    final hasTrack = ref.watch(playerProvider.select((s) => s.hasTrack));
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -89,6 +91,12 @@ class _RecentlyPlayedScreenState extends ConsumerState<RecentlyPlayedScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      bottomNavigationBar: hasTrack
+          ? const SafeArea(
+              top: false,
+              child: MiniPlayer(),
+            )
+          : null,
       body: _buildBody(),
     );
   }
@@ -160,7 +168,7 @@ class _RecentlyPlayedScreenState extends ConsumerState<RecentlyPlayedScreen> {
       color: theme.colorScheme.primary,
       backgroundColor: theme.colorScheme.surface,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
         itemCount: _tracks.length,
         itemBuilder: (context, index) {
           final track = _tracks[index];

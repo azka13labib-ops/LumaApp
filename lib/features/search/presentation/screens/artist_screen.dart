@@ -6,6 +6,7 @@ import '../../../../core/providers/player_provider.dart';
 import '../../../../core/services/youtube_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../player/presentation/widgets/mini_player.dart';
 
 class ArtistScreen extends ConsumerStatefulWidget {
   const ArtistScreen({super.key, required this.artistName});
@@ -69,9 +70,16 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textPrimary = theme.textTheme.bodyMedium?.color ?? (isDark ? Colors.white : LumaColors.lightTextPrimary);
     final textSecondary = theme.textTheme.labelSmall?.color ?? (isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary);
+    final hasTrack = ref.watch(playerProvider.select((s) => s.hasTrack));
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      bottomNavigationBar: hasTrack
+          ? const SafeArea(
+              top: false,
+              child: MiniPlayer(),
+            )
+          : null,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -164,7 +172,7 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.only(bottom: 100),
+              padding: EdgeInsets.only(bottom: hasTrack ? 24 : 40),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
