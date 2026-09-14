@@ -94,6 +94,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   final YouTubeService _yt = YouTubeService();
   final _rng = Random();
 
+  /// Exposes the raw position stream from the audio player.
+  /// Consumed by [playerPositionProvider] so only widgets that care about
+  /// playback progress subscribe — avoids O(n) rebuilds across the widget tree.
+  Stream<Duration> get positionStream => _player.positionStream;
+
   /// Monotonically increasing counter. Each call to _loadAndPlay captures
   /// the current value; if a newer load starts before we finish, we abort
   /// the stale operation silently. Replaces a CancelToken.
@@ -101,6 +106,10 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
   /// Original order before shuffle (restored when shuffle turns off).
   List<MusicItem> _orderBackup = [];
+
+  /// Autoplay pool cache to avoid double Supabase round-trip on every track end.
+  List<MusicItem> _autoplayPool = [];
+  DateTime? _autoplayPoolFetched;
 
   final Ref? _ref;
 
@@ -492,42 +501,52 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
   /// When queue ends: pick a random liked / recent track.
+  /// Autoplay pool is cached for 5 minutes to avoid repeated Supabase queries.
   Future<void> _autoplayFromLibrary() async {
     final user = Supabase.instance.client.auth.currentUser;
-    final pool = <MusicItem>[];
 
-    try {
-      final offline = await OfflineCacheService.instance.listCached();
-      pool.addAll(offline);
+    // Use cached pool if fresh (< 5 minutes old)
+    final now = DateTime.now();
+    final poolFresh = _autoplayPoolFetched != null &&
+        now.difference(_autoplayPoolFetched!).inMinutes < 5;
 
-      if (user != null) {
-        final liked = await Supabase.instance.client
-            .from('liked_songs')
-            .select()
-            .eq('user_id', user.id)
-            .limit(40);
-        for (final e in liked as List) {
-          pool.add(MusicItem.fromMap(Map<String, dynamic>.from(e as Map)));
+    if (!poolFresh) {
+      final pool = <MusicItem>[];
+      try {
+        final offline = await OfflineCacheService.instance.listCached();
+        pool.addAll(offline);
+
+        if (user != null) {
+          final liked = await Supabase.instance.client
+              .from('liked_songs')
+              .select()
+              .eq('user_id', user.id)
+              .limit(40);
+          for (final e in liked as List) {
+            pool.add(MusicItem.fromMap(Map<String, dynamic>.from(e as Map)));
+          }
+
+          final recent = await Supabase.instance.client
+              .from('recently_played')
+              .select()
+              .eq('user_id', user.id)
+              .order('played_at', ascending: false)
+              .limit(20);
+          for (final e in recent as List) {
+            pool.add(MusicItem.fromMap(Map<String, dynamic>.from(e as Map)));
+          }
         }
-
-        final recent = await Supabase.instance.client
-            .from('recently_played')
-            .select()
-            .eq('user_id', user.id)
-            .order('played_at', ascending: false)
-            .limit(20);
-        for (final e in recent as List) {
-          pool.add(MusicItem.fromMap(Map<String, dynamic>.from(e as Map)));
-        }
+      } catch (e) {
+        debugPrint('[Player] autoplay pool error: $e');
       }
-    } catch (e) {
-      debugPrint('[Player] autoplay pool error: $e');
+      _autoplayPool = pool;
+      _autoplayPoolFetched = now;
     }
 
     final seen = <String>{};
     final currentId = state.current?.id;
     final candidates = <MusicItem>[];
-    for (final t in pool) {
+    for (final t in _autoplayPool) {
       if (t.id.isEmpty || t.id == currentId || !seen.add(t.id)) continue;
       candidates.add(t);
     }
@@ -585,3 +604,12 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 final playerProvider = StateNotifierProvider<PlayerNotifier, PlayerState>(
   (ref) => PlayerNotifier(ref),
 );
+
+/// Dedicated provider untuk posisi playback.
+/// Widget yang hanya butuh progress bar (MiniPlayer, PlayerScreen)
+/// harus watch ini, bukan playerProvider, untuk menghindari rebuild
+/// pada setiap tick posisi (1-5x per detik) di seluruh widget tree.
+final playerPositionProvider = StreamProvider.autoDispose<Duration>((ref) {
+  final notifier = ref.watch(playerProvider.notifier);
+  return notifier.positionStream;
+});

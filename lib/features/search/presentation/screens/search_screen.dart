@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/services/youtube_service.dart';
+import '../../../../core/services/youtube_service.dart';  // for MusicItem type
 import '../../../../core/providers/player_provider.dart';
+import '../../../../core/providers/youtube_service_provider.dart';
 import '../../../player/presentation/widgets/track_row.dart';
 import '../../../../core/widgets/luma_list_skeleton.dart';
 
@@ -15,8 +16,9 @@ class SearchScreen extends ConsumerStatefulWidget {
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends ConsumerState<SearchScreen> {
-  final YouTubeService _ytService = YouTubeService();
+class _SearchScreenState extends ConsumerState<SearchScreen>
+    with AutomaticKeepAliveClientMixin {
+  // YouTubeService singleton dari provider — tidak perlu dispose di sini
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   Timer? _debounce;
@@ -30,11 +32,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   static final List<String> _searchHistory = [];
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void dispose() {
     _debounce?.cancel();
     _controller.dispose();
     _focusNode.dispose();
-    _ytService.dispose();
+    // _ytService di-manage oleh provider, tidak perlu dispose di sini
     super.dispose();
   }
 
@@ -54,7 +59,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _addToHistory(q);
     setState(() { _loading = true; _error = null; _searched = true; _isDebouncing = false; });
     try {
-      final r = await _ytService.searchMusic(q);
+      final ytService = ref.read(youtubeServiceProvider);
+      final r = await ytService.searchMusic(q);
       if (mounted) setState(() => _results = r);
     } catch (_) {
       if (mounted) setState(() => _error = 'Gagal memuat hasil. Periksa koneksi.');
@@ -75,6 +81,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // required by AutomaticKeepAliveClientMixin
     final theme = Theme.of(context);
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
     final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;

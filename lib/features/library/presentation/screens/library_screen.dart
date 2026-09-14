@@ -20,7 +20,8 @@ class LibraryScreen extends ConsumerStatefulWidget {
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+class _LibraryScreenState extends ConsumerState<LibraryScreen>
+    with AutomaticKeepAliveClientMixin {
   final _supabase = Supabase.instance.client;
 
   List<MusicItem> _likedSongs = [];
@@ -30,6 +31,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   String _filter = 'Semua'; // Semua / Playlist / Lagu Disukai / Unduhan
   final _searchController = TextEditingController();
   bool _searchActive = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -96,6 +100,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // required by AutomaticKeepAliveClientMixin
     final user = _supabase.auth.currentUser;
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
     

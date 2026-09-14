@@ -33,9 +33,10 @@ class TrackRow extends ConsumerWidget {
     final textPrimary = isDark ? LumaColors.darkTextPrimary : LumaColors.lightTextPrimary;
     final textSecondary = isDark ? LumaColors.darkTextSecondary : LumaColors.lightTextSecondary;
 
-    final playerState = ref.watch(playerProvider);
-    final isCurrent = playerState.current?.id == item.id;
-    final isPlaying = isCurrent && playerState.isPlaying;
+    // select() ensures TrackRow only rebuilds when current track id or
+    // playing state changes — NOT on every position/duration tick.
+    final isCurrent = ref.watch(playerProvider.select((s) => s.current?.id == item.id));
+    final isPlaying = ref.watch(playerProvider.select((s) => s.current?.id == item.id && s.isPlaying));
 
     return InteractiveScaleButton(
       pressedScale: 0.94,
@@ -54,6 +55,8 @@ class TrackRow extends ConsumerWidget {
                     imageUrl: item.thumbnailUrl,
                     width: 48,
                     height: 48,
+                    memCacheWidth: 96,  // 2x for retina; saves ~8x memory vs full-res
+                    memCacheHeight: 96,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       width: 48,

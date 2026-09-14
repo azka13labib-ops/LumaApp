@@ -14,6 +14,7 @@ import '../../../search/presentation/screens/artist_screen.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../../features/player/presentation/widgets/track_row.dart';
 import '../../../../core/widgets/luma_list_skeleton.dart';
+import '../../../../core/providers/youtube_service_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart' hide ShimmerEffect;
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -23,9 +24,12 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with AutomaticKeepAliveClientMixin {
   final _supabase = Supabase.instance.client;
-  final _ytService = YouTubeService();
+
+  // YouTubeService tidak dibuat di sini; pakai ref.read(youtubeServiceProvider)
+  // agar tetap singleton dan tidak menyebabkan YoutubeExplode leak.
 
   List<MusicItem> _recentlyPlayed = [];
   List<MusicItem> _likedSongs = [];
@@ -49,6 +53,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ];
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
     _fetchData();
@@ -56,7 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
-    _ytService.dispose();
+    // _ytService di-manage oleh youtubeServiceProvider, tidak perlu dispose di sini
     super.dispose();
   }
 
@@ -74,7 +81,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _fetchRecommended(String genre) async {
     setState(() => _recommendedLoading = true);
     try {
-      final items = await _ytService.searchMusic(_genreQuery(genre));
+      final ytService = ref.read(youtubeServiceProvider);
+      final items = await ytService.searchMusic(_genreQuery(genre));
       if (mounted) {
         setState(() {
           _recommendedSongs = items;
@@ -108,7 +116,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           .order('liked_at', ascending: false)
           .limit(8);
       final cachedFuture = OfflineCacheService.instance.listCached();
-      final recommendedFuture = _ytService.searchMusic(_genreQuery(_selectedGenre));
+      final ytService = ref.read(youtubeServiceProvider);
+      final recommendedFuture = ytService.searchMusic(_genreQuery(_selectedGenre));
 
       final results = await Future.wait<dynamic>([
         recentFuture,
@@ -183,6 +192,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // required by AutomaticKeepAliveClientMixin
     final user = _supabase.auth.currentUser;
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
     
@@ -677,7 +687,10 @@ class _HorizontalCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 child: CachedNetworkImage(
                   imageUrl: item.thumbnailUrl,
-                  width: 140, height: 140, fit: BoxFit.cover,
+                  width: 140, height: 140,
+                  memCacheWidth: 280,  // 2x for retina
+                  memCacheHeight: 280,
+                  fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
                     width: 140, height: 140, color: Theme.of(context).colorScheme.surface,
                   ),
