@@ -22,6 +22,7 @@ CREATE TABLE public.playlists (
     user_id UUID REFERENCES public.user_profiles(id) ON DELETE CASCADE NOT NULL,
     name TEXT NOT NULL,
     is_public BOOLEAN DEFAULT false NOT NULL,
+    cover_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

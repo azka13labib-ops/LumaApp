@@ -14,7 +14,7 @@ import '../../../search/presentation/screens/artist_screen.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../../features/player/presentation/widgets/track_row.dart';
 import '../../../../core/widgets/luma_list_skeleton.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_animate/flutter_animate.dart' hide ShimmerEffect;
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
