@@ -5,8 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/services/settings_service.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/interactive_scale_button.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../library/presentation/screens/downloads_screen.dart';
 import 'edit_profile_screen.dart';
@@ -53,7 +51,6 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     final initial = user?.email?.substring(0, 1).toUpperCase() ?? 'U';
-    final email = user?.email ?? 'Tidak diketahui';
     final displayName = _displayName(user);
     final settings = ref.watch(settingsProvider);
     
@@ -86,67 +83,61 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
           style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 17, letterSpacing: -0.5)),
       ),
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Profile Card
-                  InteractiveScaleButton(
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (_) => EditProfileScreen(currentDisplayName: displayName),
-                        ),
-                      );
-                      if (result == true) setState(() {});
-                    },
-                    pressedScale: 0.96,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: surfaceColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.08)),
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Card
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditProfileScreen(currentDisplayName: displayName),
+                    ),
+                  );
+                  if (result == true) setState(() {});
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
+                        child: Text(initial,
+                            style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold)),
                       ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 34,
-                            backgroundColor: isDark ? const Color(0xFF2C2C2E) : LumaColors.lightBorder,
-                            child: Text(initial,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(displayName,
                                 style: TextStyle(
                                     color: textPrimary,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold)),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(displayName,
-                                    style: TextStyle(
-                                        color: textPrimary,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: -0.4)),
-                                const SizedBox(height: 2),
-                                Text(email,
-                                    style: TextStyle(
-                                        color: textSecondary,
-                                        fontSize: 14)),
-                              ],
-                            ),
-                          ),
-                          Icon(Icons.chevron_right_rounded, color: textSecondary.withValues(alpha: 0.5)),
-                        ],
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.4)),
+                            const SizedBox(height: 4),
+                            Text('Lihat Profil',
+                                style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 14)),
+                          ],
+                        ),
                       ),
-                    ),
+                      Icon(Icons.chevron_right_rounded, color: textSecondary),
+                    ],
                   ),
+                ),
+              ),
+            ),
 
                   const SizedBox(height: 16),
                   
@@ -259,30 +250,23 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Logout Button
-                  InteractiveScaleButton(
-                    onTap: () => _handleLogout(context),
-                    pressedScale: 0.96,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: surfaceColor,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Center(
-                        child: Text('Keluar dari Akun', 
-                          style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-                ],
+            const SizedBox(height: 32),
+            // Logout Button
+            Center(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 14),
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                ),
+                onPressed: () => _handleLogout(context),
+                child: const Text('Keluar dari Akun', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
-          ),
+            const SizedBox(height: 48),
+          ],
+        ),
+      ),
       );
   }
 
@@ -479,14 +463,13 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 16, bottom: 8),
+      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
       child: Text(
-        title.toUpperCase(),
+        title,
         style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+          color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -501,21 +484,8 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.08)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Material(
-          color: Colors.transparent,
-          child: Column(
-            children: children,
-          ),
-        ),
-      ),
+    return Column(
+      children: children,
     );
   }
 }
@@ -543,47 +513,23 @@ class _SettingsTile extends StatelessWidget {
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
     final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
 
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.only(left: 16),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: iconColor,
-                borderRadius: BorderRadius.circular(8),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: textSecondary, size: 24),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
               ),
-              child: Icon(icon, color: Colors.white, size: 16),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: isLast ? null : Border(
-                    bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2), width: 0.5)
-                  ),
-                ),
-                padding: const EdgeInsets.only(right: 16, top: 14, bottom: 14),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
-                    ),
-                    const SizedBox(width: 8),
-                    if (value != null)
-                      Flexible(
-                        child: Text(value!, style: TextStyle(color: textSecondary, fontSize: 15), overflow: TextOverflow.ellipsis),
-                      ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.chevron_right_rounded, color: textSecondary.withValues(alpha: 0.5), size: 20),
-                  ],
-                ),
-              ),
-            ),
-          ],
+              if (value != null)
+                Text(value!, style: TextStyle(color: textSecondary, fontSize: 14)),
+            ],
+          ),
         ),
       ),
     );
@@ -611,47 +557,28 @@ class _SettingsToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textPrimary = theme.textTheme.bodyMedium?.color ?? Colors.white;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
 
-    return InkWell(
-      onTap: () => onChanged(!value),
-      child: Container(
-        padding: const EdgeInsets.only(left: 16),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: iconColor,
-                borderRadius: BorderRadius.circular(8),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(icon, color: textSecondary, size: 24),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
               ),
-              child: Icon(icon, color: Colors.white, size: 16),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: isLast ? null : Border(
-                    bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2), width: 0.5)
-                  ),
-                ),
-                padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(label, style: TextStyle(color: textPrimary, fontSize: 16), overflow: TextOverflow.ellipsis),
-                    ),
-                    const SizedBox(width: 8),
-                    CupertinoSwitch(
-                      value: value,
-                      activeTrackColor: theme.colorScheme.primary,
-                      onChanged: onChanged,
-                    ),
-                  ],
-                ),
+              Switch(
+                value: value,
+                activeColor: theme.colorScheme.primary,
+                onChanged: onChanged,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
