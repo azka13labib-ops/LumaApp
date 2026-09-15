@@ -7,12 +7,14 @@ class UpdateInfo {
   final String latestVersion;
   final String downloadUrl;
   final String releaseNotes;
+  final bool forceUpdate;
 
   UpdateInfo({
     required this.hasUpdate,
     required this.latestVersion,
     required this.downloadUrl,
     required this.releaseNotes,
+    this.forceUpdate = false,
   });
 }
 
@@ -43,18 +45,24 @@ class AppUpdater {
         final data = response.data is String ? jsonDecode(response.data) : response.data;
         
         final latestVersion = data['latest_version'] as String;
-        final downloadUrl = data['download_url'] as String;
+        final downloadUrl = data['download_url'] as String? ?? '';
         final releaseNotes = data['release_notes'] as String? ?? 'Ada pembaruan baru!';
+        final forceUpdate = data['force_update'] as bool? ?? false;
 
-        // Logika sederhana: jika string versi berbeda, dianggap ada update.
-        // Untuk tingkat mahir, gunakan library pub_semver.
-        final hasUpdate = latestVersion != currentVersion;
+        // Validasi: skip update jika download_url kosong atau masih placeholder
+        final isValidUrl = downloadUrl.startsWith('https://') &&
+            !downloadUrl.contains('link-ke-file') &&
+            !downloadUrl.contains('placeholder') &&
+            downloadUrl.endsWith('.apk');
+
+        final hasUpdate = latestVersion != currentVersion && isValidUrl;
 
         return UpdateInfo(
           hasUpdate: hasUpdate,
           latestVersion: latestVersion,
           downloadUrl: downloadUrl,
           releaseNotes: releaseNotes,
+          forceUpdate: forceUpdate,
         );
       }
     } catch (e) {
