@@ -13,10 +13,19 @@ class MiniPlayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ps = ref.watch(playerProvider);
-    if (!ps.hasTrack) return const SizedBox.shrink();
+    // Hanya watch state yang relevan, JANGAN watch posisi di sini
+    final state = ref.watch(playerProvider.select((s) => (
+      hasTrack: s.current != null,
+      current: s.current,
+      isFavorite: s.isFavorite,
+      isPlaying: s.isPlaying,
+      isLoading: s.isLoading,
+      isCached: s.isCached,
+    )));
 
-    final item = ps.current!;
+    if (!state.hasTrack) return const SizedBox.shrink();
+
+    final item = state.current!;
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -88,6 +97,8 @@ class MiniPlayer extends ConsumerWidget {
                               imageUrl: item.thumbnailUrl,
                               width: 44,
                               height: 44,
+                              memCacheWidth: 88, // 2x retina
+                              memCacheHeight: 88,
                               fit: BoxFit.cover,
                               placeholder: (context, url) => Container(
                                 width: 44,
@@ -125,7 +136,7 @@ class MiniPlayer extends ConsumerWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  if (ps.isCached)
+                                  if (state.isCached)
                                     Icon(Icons.download_done_rounded,
                                         color: accentColor, size: 14),
                                 ],
@@ -144,7 +155,7 @@ class MiniPlayer extends ConsumerWidget {
                         ),
                         // Like: bouncy animated heart
                         AnimatedHeartButton(
-                          isLiked: ps.isFavorite,
+                          isLiked: state.isFavorite,
                           size: 20,
                           activeColor: const Color(0xFFEF4444),
                           inactiveColor: inactiveIconColor,
@@ -158,7 +169,7 @@ class MiniPlayer extends ConsumerWidget {
                             width: 44,
                             height: 44,
                             child: Center(
-                              child: ps.isLoading
+                              child: state.isLoading
                                   ? SizedBox(
                                       width: 20,
                                       height: 20,
@@ -166,7 +177,7 @@ class MiniPlayer extends ConsumerWidget {
                                           strokeWidth: 2,
                                           color: isDark ? Colors.white54 : LumaColors.lightTextSecondary))
                                   : Icon(
-                                      ps.isPlaying
+                                      state.isPlaying
                                           ? Icons.pause_rounded
                                           : Icons.play_arrow_rounded,
                                       color: textPrimary,
@@ -192,23 +203,35 @@ class MiniPlayer extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // Progress bar: visible accent color at bottom
-                if (ps.duration.inMilliseconds > 0)
-                  LinearProgressIndicator(
-                    value: (ps.position.inMilliseconds /
-                            ps.duration.inMilliseconds)
-                        .clamp(0.0, 1.0),
-                    backgroundColor: isDark ? Colors.white12 : LumaColors.lightDivider,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(accentColor),
-                    minHeight: 2.5,
-                  )
-                else
-                  const SizedBox(height: 2.5),
+                // Progress bar terpisah
+                _MiniPlayerProgressBar(isDark: isDark, accentColor: accentColor),
               ],
             ),
           ),
         ),
       );
+  }
+}
+
+class _MiniPlayerProgressBar extends ConsumerWidget {
+  const _MiniPlayerProgressBar({required this.isDark, required this.accentColor});
+  final bool isDark;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final duration = ref.watch(playerProvider.select((s) => s.duration));
+    final position = ref.watch(playerPositionProvider).valueOrNull ?? Duration.zero;
+
+    if (duration.inMilliseconds > 0) {
+      return LinearProgressIndicator(
+        value: (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0),
+        backgroundColor: isDark ? Colors.white12 : LumaColors.lightDivider,
+        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+        minHeight: 2.5,
+      );
+    } else {
+      return const SizedBox(height: 2.5);
+    }
   }
 }

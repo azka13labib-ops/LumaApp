@@ -69,7 +69,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           .from('liked_songs')
           .select()
           .eq('user_id', user.id)
-          .order('liked_at', ascending: false);
+          .order('liked_at', ascending: false)
+          .limit(100);
 
       _likedSongs = (res as List)
           .map((e) => MusicItem.fromMap(

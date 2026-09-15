@@ -113,7 +113,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                       });
                       _debounce?.cancel();
                       if (v.trim().length >= 2) {
-                        _debounce = Timer(const Duration(milliseconds: 500), () => _search(v));
+                        _debounce = Timer(const Duration(milliseconds: 400), () => _search(v));
                       } else {
                         setState(() => _isDebouncing = false);
                         if (v.isEmpty) {

@@ -50,6 +50,8 @@ dependencies:
   image_picker_web: any
   cached_network_image: any
   flutter_animate: ^4.5.2
+  package_info_plus: any
+  open_filex: any
 
 dev_dependencies:
   flutter_test:

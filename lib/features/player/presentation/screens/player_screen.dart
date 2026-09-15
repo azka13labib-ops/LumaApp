@@ -14,8 +14,7 @@ import '../widgets/queue_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 // Palette state provider: per-thumbnail URL
-final _paletteProvider =
-    FutureProvider.family<Color, String>((ref, url) async {
+final _paletteProvider = FutureProvider.family<Color, String>((ref, url) async {
   if (url.isEmpty) return LumaColors.darkSurface;
   try {
     final pg = await PaletteGenerator.fromImageProvider(
@@ -72,10 +71,12 @@ class _DownloadBtn extends ConsumerWidget {
           }
           if (isDownloading) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            _modernSnack('Mengunduh…', isError: false, duration: const Duration(seconds: 2)),
+            _modernSnack('Mengunduh…',
+                isError: false, duration: const Duration(seconds: 2)),
           );
           await ref.read(playerProvider.notifier).downloadCurrent();
-          final nowCached = await OfflineCacheService.instance.isCached(item.id);
+          final nowCached =
+              await OfflineCacheService.instance.isCached(item.id);
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             _modernSnack(
@@ -92,11 +93,6 @@ class _DownloadBtn extends ConsumerWidget {
 
 class PlayerScreen extends ConsumerWidget {
   const PlayerScreen({super.key});
-
-  String _fmt(Duration d) {
-    String p(int n) => n.toString().padLeft(2, '0');
-    return '${p(d.inMinutes.remainder(60))}:${p(d.inSeconds.remainder(60))}';
-  }
 
   IconData _repeatIcon(RepeatMode mode) => switch (mode) {
         RepeatMode.off => Icons.repeat_rounded,
@@ -154,7 +150,9 @@ class PlayerScreen extends ConsumerWidget {
                 color: Colors.white70,
               ),
               title: Text(
-                state.isCached ? 'Sudah tersimpan offline' : 'Unduh untuk offline',
+                state.isCached
+                    ? 'Sudah tersimpan offline'
+                    : 'Unduh untuk offline',
                 style: const TextStyle(color: Colors.white, fontSize: 15),
               ),
               onTap: () async {
@@ -169,10 +167,12 @@ class PlayerScreen extends ConsumerWidget {
                 }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    _modernSnack('Mengunduh…', isError: false, duration: const Duration(seconds: 2)),
+                    _modernSnack('Mengunduh…',
+                        isError: false, duration: const Duration(seconds: 2)),
                   );
                 }
-                final ok = await ref.read(playerProvider.notifier).downloadCurrent();
+                final ok =
+                    await ref.read(playerProvider.notifier).downloadCurrent();
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   _modernSnack(
@@ -183,18 +183,22 @@ class PlayerScreen extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.person_outline_rounded, color: Colors.white70),
+              leading: const Icon(Icons.person_outline_rounded,
+                  color: Colors.white70),
               title: Text('Lihat ${item.author}',
                   style: const TextStyle(color: Colors.white, fontSize: 15)),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => ArtistScreen(artistName: item.author)));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ArtistScreen(artistName: item.author)));
               },
             ),
             ListTile(
               leading: const Icon(Icons.lyrics_outlined, color: Colors.white70),
-              title: const Text('Lirik', style: TextStyle(color: Colors.white, fontSize: 15)),
+              title: const Text('Lirik',
+                  style: TextStyle(color: Colors.white, fontSize: 15)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showLyrics(context, item.title, item.author);
@@ -209,9 +213,28 @@ class PlayerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(playerProvider);
+    final theme = Theme.of(context);
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+    final onSurface = theme.colorScheme.onSurface;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
+    // Listen to changes EXCEPT position to avoid rebuilds every 200ms
+    ref.watch(playerProvider.select((s) => (
+          s.current,
+          s.isShuffled,
+          s.repeatMode,
+          s.isPlaying,
+          s.isFavorite,
+          s.isLoading,
+          s.loadingStatus,
+          s.queue,
+        )));
+
+    // Get the full state snapshot for this build
+    final state = ref.read(playerProvider);
+
     if (state.current == null) {
-      return const Scaffold(backgroundColor: LumaColors.darkBg);
+      return Scaffold(backgroundColor: scaffoldBg);
     }
 
     final item = state.current!;
@@ -221,11 +244,13 @@ class PlayerScreen extends ConsumerWidget {
     final paletteAsync = ref.watch(_paletteProvider(item.thumbnailUrl));
     final bgColor = paletteAsync.maybeWhen(
       data: (c) => c,
-      orElse: () => const Color(0xFF1A1A1A),
+      orElse: () => theme.brightness == Brightness.dark
+          ? const Color(0xFF1A1A1A)
+          : const Color(0xFFE0E0E0),
     );
 
     return Scaffold(
-      backgroundColor: LumaColors.darkBg,
+      backgroundColor: scaffoldBg,
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onVerticalDragEnd: (details) {
@@ -242,8 +267,12 @@ class PlayerScreen extends ConsumerWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [bgColor, LumaColors.darkBg],
-              stops: const [0.0, 0.55],
+              colors: [
+                bgColor.withOpacity(0.8),
+                Color.lerp(bgColor, scaffoldBg, 0.6) ?? scaffoldBg,
+                scaffoldBg,
+              ],
+              stops: const [0.0, 0.5, 1.0],
             ),
           ),
           child: SafeArea(
@@ -255,17 +284,17 @@ class PlayerScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                            color: Colors.white, size: 32),
+                        icon: Icon(Icons.keyboard_arrow_down_rounded,
+                            color: onSurface, size: 32),
                         onPressed: () => Navigator.pop(context),
                         tooltip: 'Tutup',
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Sedang diputar',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: onSurface.withOpacity(0.7),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
@@ -273,8 +302,8 @@ class PlayerScreen extends ConsumerWidget {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.more_vert_rounded,
-                            color: Colors.white, size: 24),
+                        icon: Icon(Icons.more_vert_rounded,
+                            color: onSurface, size: 24),
                         onPressed: () => _showMore(context, ref, state),
                         tooltip: 'Opsi lainnya',
                       ),
@@ -334,279 +363,191 @@ class PlayerScreen extends ConsumerWidget {
                   ),
                 ),
 
-              const Spacer(),
+                const Spacer(),
 
-              // ── Track info + Download + Like ──────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.4,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      ArtistScreen(artistName: item.author)),
-                            ),
-                            child: Text(
-                              item.author,
-                              style: const TextStyle(
-                                color: LumaColors.darkTextSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                // ── Track info + Download + Like ──────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: TextStyle(
+                                color: onSurface,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.4,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const _DownloadBtn(),
-                    const SizedBox(width: 4),
-                    // Animated Bouncy Like
-                    AnimatedHeartButton(
-                      isLiked: state.isFavorite,
-                      size: 26,
-                      activeColor: Colors.white,
-                      inactiveColor: Colors.white60,
-                      onTap: () => ref.read(playerProvider.notifier).toggleFavorite(),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Progress slider ────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 4,
-                        thumbShape:
-                            const RoundSliderThumbShape(enabledThumbRadius: 7),
-                        overlayShape:
-                            const RoundSliderOverlayShape(overlayRadius: 18),
-                        activeTrackColor: Colors.white,
-                        inactiveTrackColor: Colors.white24,
-                        thumbColor: Colors.white,
-                        overlayColor: Colors.white12,
-                      ),
-                      child: Slider(
-                        min: 0.0,
-                        max: state.duration.inMilliseconds
-                            .toDouble()
-                            .clamp(1.0, double.infinity),
-                        value: state.position.inMilliseconds
-                            .toDouble()
-                            .clamp(
-                              0.0,
-                              state.duration.inMilliseconds
-                                  .toDouble()
-                                  .clamp(1.0, double.infinity),
-                            ),
-                        onChanged: (val) => ref
-                            .read(playerProvider.notifier)
-                            .seekTo(Duration(milliseconds: val.toInt())),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_fmt(state.position),
-                                  style: const TextStyle(
-                                      color: LumaColors.darkTextSecondary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500)),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                padding: EdgeInsets.zero,
-                                icon: const Icon(Icons.replay_10_rounded, size: 20, color: Colors.white70),
-                                onPressed: () => ref
-                                    .read(playerProvider.notifier)
-                                    .seekBackward(const Duration(seconds: 10)),
-                                tooltip: 'Mundur 10 detik',
+                            const SizedBox(height: 2),
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        ArtistScreen(artistName: item.author)),
                               ),
-                            ],
-                          ),
-                          if (state.isLoading && state.loadingStatus != null)
-                            Text(
-                              state.loadingStatus!,
-                              style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                padding: EdgeInsets.zero,
-                                icon: const Icon(Icons.forward_10_rounded, size: 20, color: Colors.white70),
-                                onPressed: () => ref
-                                    .read(playerProvider.notifier)
-                                    .seekForward(const Duration(seconds: 10)),
-                                tooltip: 'Maju 10 detik',
+                              child: Text(
+                                item.author,
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(width: 8),
-                              Text(_fmt(state.duration),
-                                  style: const TextStyle(
-                                      color: LumaColors.darkTextSecondary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // -- Playback controls (5 primary actions with spacious touch targets) --
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Shuffle
-                    _ControlBtn(
-                      icon: Icons.shuffle_rounded,
-                      size: 24,
-                      color: shuffleActive ? Colors.white : Colors.white38,
-                      onTap: () =>
-                          ref.read(playerProvider.notifier).toggleShuffle(),
-                      badge: shuffleActive,
-                    ),
-                    // Skip Previous
-                    _ControlBtn(
-                      icon: Icons.skip_previous_rounded,
-                      size: 38,
-                      color: Colors.white,
-                      onTap: () =>
-                          ref.read(playerProvider.notifier).previous(),
-                    ),
-                    // Play/Pause (Central Hero focal point with spring bounce)
-                    InteractiveScaleButton(
-                      pressedScale: 0.88,
-                      onTap: () =>
-                          ref.read(playerProvider.notifier).togglePlayPause(),
-                      child: Container(
-                        width: 66,
-                        height: 66,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              blurRadius: 18,
-                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: Center(
-                          child: state.isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.black,
-                                    strokeWidth: 2.5,
+                      ),
+                      const SizedBox(width: 8),
+                      const _DownloadBtn(),
+                      const SizedBox(width: 4),
+                      // Animated Bouncy Like
+                      AnimatedHeartButton(
+                        isLiked: state.isFavorite,
+                        size: 26,
+                        activeColor: onSurface,
+                        inactiveColor: onSurface.withOpacity(0.6),
+                        onTap: () =>
+                            ref.read(playerProvider.notifier).toggleFavorite(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Progress slider ────────────────────────────────────────
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: _PositionSlider(),
+                ),
+
+                const SizedBox(height: 12),
+
+                // -- Playback controls (5 primary actions with spacious touch targets) --
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Shuffle
+                      _ControlBtn(
+                        icon: Icons.shuffle_rounded,
+                        size: 24,
+                        color: shuffleActive ? onSurface : onSurface.withOpacity(0.38),
+                        onTap: () =>
+                            ref.read(playerProvider.notifier).toggleShuffle(),
+                        badge: shuffleActive,
+                      ),
+                      // Skip Previous
+                      _ControlBtn(
+                        icon: Icons.skip_previous_rounded,
+                        size: 38,
+                        color: onSurface,
+                        onTap: () =>
+                            ref.read(playerProvider.notifier).previous(),
+                      ),
+                      // Play/Pause (Central Hero focal point with spring bounce)
+                      InteractiveScaleButton(
+                        pressedScale: 0.88,
+                        onTap: () =>
+                            ref.read(playerProvider.notifier).togglePlayPause(),
+                        child: Container(
+                          width: 66,
+                          height: 66,
+                          decoration: BoxDecoration(
+                            color: onSurface,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: onSurface.withValues(alpha: 0.35),
+                                blurRadius: 18,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: state.isLoading
+                                ? SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: scaffoldBg,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : Icon(
+                                    state.isPlaying
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded,
+                                    color: scaffoldBg,
+                                    size: 40,
                                   ),
-                                )
-                              : Icon(
-                                  state.isPlaying
-                                      ? Icons.pause_rounded
-                                      : Icons.play_arrow_rounded,
-                                  color: Colors.black,
-                                  size: 40,
-                                ),
+                          ),
                         ),
                       ),
-                    ),
-                    // Skip Next
-                    _ControlBtn(
-                      icon: Icons.skip_next_rounded,
-                      size: 38,
-                      color: Colors.white,
-                      onTap: () => ref.read(playerProvider.notifier).next(),
-                    ),
-                    // Repeat
-                    _ControlBtn(
-                      icon: _repeatIcon(state.repeatMode),
-                      size: 24,
-                      color: repeatActive ? Colors.white : Colors.white38,
-                      onTap: () =>
-                          ref.read(playerProvider.notifier).cycleRepeat(),
-                      badge: repeatActive,
-                    ),
-                  ],
+                      // Skip Next
+                      _ControlBtn(
+                        icon: Icons.skip_next_rounded,
+                        size: 38,
+                        color: onSurface,
+                        onTap: () => ref.read(playerProvider.notifier).next(),
+                      ),
+                      // Repeat
+                      _ControlBtn(
+                        icon: _repeatIcon(state.repeatMode),
+                        size: 24,
+                        color: repeatActive ? onSurface : onSurface.withOpacity(0.38),
+                        onTap: () =>
+                            ref.read(playerProvider.notifier).cycleRepeat(),
+                        badge: repeatActive,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // ── Secondary Actions (Lirik, Antrean) ───────────────────────
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _SecondaryBtn(
-                      icon: Icons.lyrics_outlined,
-                      label: 'Lirik',
-                      onTap: () =>
-                          _showLyrics(context, item.title, item.author),
-                    ),
-                    _SecondaryBtn(
-                      icon: Icons.queue_music_rounded,
-                      label: 'Antrean (${state.queue.length})',
-                      onTap: () => _showQueue(context),
-                    ),
-                  ],
+                // ── Secondary Actions (Lirik, Antrean) ───────────────────────
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _SecondaryBtn(
+                        icon: Icons.lyrics_outlined,
+                        label: 'Lirik',
+                        onTap: () =>
+                            _showLyrics(context, item.title, item.author),
+                      ),
+                      _SecondaryBtn(
+                        icon: Icons.queue_music_rounded,
+                        label: 'Antrean (${state.queue.length})',
+                        onTap: () => _showQueue(context),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 SnackBar _modernSnack(String msg, {Duration? duration, bool isError = false}) {
@@ -713,6 +654,120 @@ class _SecondaryBtn extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PositionSlider extends ConsumerWidget {
+  const _PositionSlider();
+
+  String _fmt(Duration d) {
+    String p(int n) => n.toString().padLeft(2, '0');
+    return '${p(d.inMinutes.remainder(60))}:${p(d.inSeconds.remainder(60))}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final textSecondary = theme.textTheme.labelSmall?.color ?? Colors.grey;
+
+    final duration = ref.watch(playerProvider.select((s) => s.duration));
+    final position = ref.watch(playerPositionProvider).valueOrNull ?? Duration.zero;
+    final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
+    final loadingStatus = ref.watch(playerProvider.select((s) => s.loadingStatus));
+
+    return Column(
+      children: [
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 4,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+            activeTrackColor: onSurface,
+            inactiveTrackColor: onSurface.withOpacity(0.24),
+            thumbColor: onSurface,
+            overlayColor: onSurface.withOpacity(0.12),
+          ),
+          child: Slider(
+            min: 0.0,
+            max: duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
+            value: position.inMilliseconds.toDouble().clamp(
+                  0.0,
+                  duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
+                ),
+            onChanged: (val) => ref
+                .read(playerProvider.notifier)
+                .seekTo(Duration(milliseconds: val.toInt())),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_fmt(position),
+                      style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.replay_10_rounded, size: 20, color: onSurface.withOpacity(0.7)),
+                    onPressed: () => ref
+                        .read(playerProvider.notifier)
+                        .seekBackward(const Duration(seconds: 10)),
+                    tooltip: 'Mundur 10 detik',
+                  ),
+                ],
+              ),
+              if (isLoading && loadingStatus != null)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      loadingStatus,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: onSurface.withOpacity(0.7),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ),
+              if (!(isLoading && loadingStatus != null))
+                const Spacer(),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.forward_10_rounded, size: 20, color: onSurface.withOpacity(0.7)),
+                    onPressed: () => ref
+                        .read(playerProvider.notifier)
+                        .seekForward(const Duration(seconds: 10)),
+                    tooltip: 'Maju 10 detik',
+                  ),
+                  const SizedBox(width: 8),
+                  Text(_fmt(duration),
+                      style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

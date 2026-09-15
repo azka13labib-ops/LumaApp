@@ -15,6 +15,7 @@ import 'package:luma_app/features/premium/presentation/screens/premium_screen.da
 import 'package:luma_app/features/player/presentation/widgets/mini_player.dart';
 import 'core/services/settings_service.dart';
 import 'core/widgets/luma_animated_nav_bar.dart';
+import 'core/updater/widgets/update_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,15 +51,9 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
-  User? _user;
-
   @override
   void initState() {
     super.initState();
-    _user = Supabase.instance.client.auth.currentUser;
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      if (mounted) setState(() => _user = data.session?.user);
-    });
   }
 
   @override
@@ -75,7 +70,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       darkTheme: settings.themePreference == ThemePreference.midnight 
           ? AppTheme.midnight 
           : AppTheme.dark,
-      home: _user == null ? const WelcomeScreen() : const MainShell(),
+      home: const SplashUpdateScreen(),
     );
   }
 }
