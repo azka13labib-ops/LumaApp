@@ -3,6 +3,16 @@
     "supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=asqayijbymulsaioisno&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
+    },
+    "obsidian": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://127.0.0.1:27200/mcp",
+        "--header",
+        "Authorization: Bearer cT12QXGqRuTfhTgBBegy9oQOkb12zRatsukF2XVYGgo"
+      ]
     }
   }
 }
