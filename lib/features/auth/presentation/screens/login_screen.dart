@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/oauth_loopback_server.dart';
 import '../widgets/luma_emblem.dart';
+import 'auth_gate.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -77,6 +78,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     setState(() { _isLoading = true; _error = null; });
     try {
       await Supabase.instance.client.auth.signInWithPassword(email: email, password: pass);
+      // Login sukses: arahkan ke AuthGate. AuthGate menonton onAuthStateChange
+      // secara reaktif sehingga akan menampilkan MainShell otomatis.
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthGate()),
+          (route) => false,
+        );
+      }
     } on AuthException catch (e) {
       setState(() => _error = _translateAuthError(e.message));
       HapticFeedback.heavyImpact();
@@ -146,7 +155,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
             try {
               await Supabase.instance.client.auth.getSessionFromUrl(uri);
               if (mounted) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                // OAuth sukses: arahkan ke AuthGate (yang menonton
+                // onAuthStateChange reaktif) dan hapus seluruh stack sehingga
+                // tidak ada layar stuck di belakang.
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthGate()),
+                  (route) => false,
+                );
               }
             } catch (e) {
               debugPrint('[Auth] Error getting session from loopback: $e');

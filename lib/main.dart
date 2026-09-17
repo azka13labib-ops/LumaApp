@@ -7,14 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'core/theme/app_theme.dart';
-import 'package:luma_app/features/auth/presentation/screens/welcome_screen.dart';
-import 'package:luma_app/features/home/presentation/screens/home_screen.dart';
-import 'package:luma_app/features/search/presentation/screens/search_screen.dart';
-import 'package:luma_app/features/library/presentation/screens/library_screen.dart';
-import 'package:luma_app/features/premium/presentation/screens/premium_screen.dart';
-import 'package:luma_app/features/player/presentation/widgets/mini_player.dart';
 import 'core/services/settings_service.dart';
-import 'core/widgets/luma_animated_nav_bar.dart';
 import 'core/updater/widgets/update_screen.dart';
 
 void main() async {
@@ -70,49 +63,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       darkTheme: settings.themePreference == ThemePreference.midnight 
           ? AppTheme.midnight 
           : AppTheme.dark,
+      // Widget pertama yang dimuat: SplashUpdateScreen.
+      // Berlaku untuk SEMUA user (login maupun logout) — tidak ada syarat auth.
       home: const SplashUpdateScreen(),
-    );
-  }
-}
-
-class MainShell extends StatefulWidget {
-  const MainShell({super.key});
-
-  @override
-  State<MainShell> createState() => _MainShellState();
-}
-
-class _MainShellState extends State<MainShell> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const SearchScreen(),
-    const LibraryScreen(),
-    const PremiumScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Mini player sits on top of the bottom nav: never clips list items
-            const MiniPlayer(),
-            LumaAnimatedNavBar(
-              currentIndex: _currentIndex,
-              onTap: (index) => setState(() => _currentIndex = index),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
