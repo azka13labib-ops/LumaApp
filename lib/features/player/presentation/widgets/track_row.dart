@@ -121,15 +121,16 @@ class TrackRow extends ConsumerWidget {
                 ],
               ),
             ),
-            if (showDownload)
+            if (showDownload) ...[
               _DownloadTrackButton(item: item),
-            if (!showDownload)
-              trailing ??
-                  IconButton(
-                    icon: Icon(Icons.more_vert_rounded,
-                        color: isDark ? Colors.white54 : LumaColors.lightTextSecondary, size: 20),
-                    onPressed: () => _showTrackMenu(context, ref, item),
-                  ),
+              const SizedBox(width: 2),
+            ],
+            trailing ??
+                IconButton(
+                  icon: Icon(Icons.more_vert_rounded,
+                      color: isDark ? Colors.white54 : LumaColors.lightTextSecondary, size: 20),
+                  onPressed: () => _showTrackMenu(context, ref, item),
+                ),
           ],
         ),
       ),

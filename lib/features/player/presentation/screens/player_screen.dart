@@ -9,6 +9,8 @@ import '../../../../core/services/offline_cache_service.dart';
 import '../../../../core/widgets/animated_heart_button.dart';
 import '../../../../core/widgets/interactive_scale_button.dart';
 import '../../../search/presentation/screens/artist_screen.dart';
+import '../../../search/presentation/widgets/playlist_picker_sheet.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/lyrics_sheet.dart';
 import '../widgets/queue_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -409,6 +411,34 @@ class PlayerScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.playlist_add_rounded),
+                        color: onSurface.withValues(alpha: 0.8),
+                        iconSize: 26,
+                        tooltip: 'Tambah ke Playlist',
+                        onPressed: () {
+                          final user = Supabase.instance.client.auth.currentUser;
+                          if (user != null) {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => PlaylistPickerSheet(
+                                item: item,
+                                userId: user.id,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Silakan login untuk menambah ke playlist'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 4),
                       const _DownloadBtn(),
                       const SizedBox(width: 4),
                       // Animated Bouncy Like
