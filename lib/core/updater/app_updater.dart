@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -55,7 +56,7 @@ class AppUpdater {
             !downloadUrl.contains('placeholder') &&
             downloadUrl.endsWith('.apk');
 
-        final hasUpdate = latestVersion != currentVersion && isValidUrl;
+        final hasUpdate = _isVersionNewer(latestVersion, currentVersion) && isValidUrl;
 
         return UpdateInfo(
           hasUpdate: hasUpdate,
@@ -66,9 +67,31 @@ class AppUpdater {
         );
       }
     } catch (e) {
-      // Jika gagal cek update (misal tidak ada internet), kita biarkan saja lolos
-      print('Gagal mengecek update: $e');
+      debugPrint('Gagal mengecek update: $e');
     }
     return null;
+  }
+
+  /// Memeriksa apakah versi remote lebih baru secara semantik daripada versi lokal
+  static bool _isVersionNewer(String remote, String local) {
+    try {
+      // Hilangkan build metadata (+1, dll) jika ada
+      final cleanRemote = remote.split('+').first.trim();
+      final cleanLocal = local.split('+').first.trim();
+
+      final remoteParts = cleanRemote.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+      final localParts = cleanLocal.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+
+      final maxLen = remoteParts.length > localParts.length ? remoteParts.length : localParts.length;
+      for (int i = 0; i < maxLen; i++) {
+        final r = i < remoteParts.length ? remoteParts[i] : 0;
+        final l = i < localParts.length ? localParts[i] : 0;
+        if (r > l) return true;
+        if (r < l) return false;
+      }
+      return false;
+    } catch (_) {
+      return remote != local;
+    }
   }
 }
