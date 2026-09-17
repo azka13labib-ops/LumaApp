@@ -159,7 +159,40 @@ class MiniPlayer extends ConsumerWidget {
                           size: 20,
                           activeColor: const Color(0xFFEF4444),
                           inactiveColor: inactiveIconColor,
-                          onTap: () => ref.read(playerProvider.notifier).toggleFavorite(),
+                          onTap: () async {
+                            try {
+                              final res = await ref
+                                  .read(playerProvider.notifier)
+                                  .toggleFavorite();
+                              if (context.mounted && res != null) {
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(
+                                          res ? Icons.favorite_rounded : Icons.heart_broken_rounded,
+                                          color: res ? const Color(0xFFEF4444) : Colors.white70,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          res
+                                              ? 'Ditambahkan ke Lagu yang Disukai'
+                                              : 'Dihapus dari Lagu yang Disukai',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                );
+                              }
+                            } catch (_) {}
+                          },
                         ),
                         // Play/Pause: bouncy spring press
                         InteractiveScaleButton(

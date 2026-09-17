@@ -155,19 +155,20 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   Future<void> play(List<MusicItem> queue, int index) async {
     if (queue.isEmpty || index < 0 || index >= queue.length) return;
     _orderBackup = List<MusicItem>.from(queue);
+    final item = queue[index];
     state = state.copyWith(
       queue: queue,
       currentIndex: index,
-      current: queue[index],
+      current: item,
+      isFavorite: false,
       isLoading: true,
       isShuffled: false,
       clearError: true,
       loadingStatus: 'Mengambil audio…',
     );
-    await _loadAndPlay(queue[index]);
-    _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
-    _saveRecentlyPlayed(queue[index])
-        .catchError((e) => debugPrint('[Player] saveRecent: $e'));
+    unawaited(_checkFavorite(item.id));
+    unawaited(_saveRecentlyPlayed(item));
+    await _loadAndPlay(item);
   }
 
   Future<void> togglePlayPause() async {
@@ -308,30 +309,74 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     await _playAt(index);
   }
 
-  Future<void> toggleFavorite() async {
+  Future<bool?> toggleFavorite([MusicItem? targetItem]) async {
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null || state.current == null) return;
+    final item = targetItem ?? state.current;
+    if (user == null || item == null) return null;
+
+    final isCurrent = state.current?.id == item.id;
+    final previousFavorite = isCurrent ? state.isFavorite : false;
+    // Optimistic update for the currently playing item
+    final targetFavorite = isCurrent ? !previousFavorite : true;
+    if (isCurrent) {
+      state = state.copyWith(isFavorite: targetFavorite);
+    }
 
     try {
-      if (state.isFavorite) {
+      // 1. Pastikan user_profile sudah terbuat agar tidak memicu Foreign Key Violation di Postgres
+      try {
+        await Supabase.instance.client.from('user_profiles').upsert({
+          'id': user.id,
+          'username': user.userMetadata?['full_name'] ??
+              user.userMetadata?['username'] ??
+              user.email?.split('@').first ??
+              'User',
+          'avatar_url': user.userMetadata?['avatar_url'] ?? '',
+        });
+      } catch (_) {}
+
+      // Jika targetItem bukan lagu yang sedang dimainkan, cek status terbarunya dulu
+      bool shouldLike = targetFavorite;
+      if (!isCurrent) {
+        final existing = await Supabase.instance.client
+            .from('liked_songs')
+            .select('youtube_id')
+            .eq('user_id', user.id)
+            .eq('youtube_id', item.id)
+            .maybeSingle();
+        shouldLike = existing == null;
+      }
+
+      if (shouldLike) {
+        await Supabase.instance.client.from('liked_songs').upsert({
+          'user_id': user.id,
+          'youtube_id': item.id,
+          'title': item.title,
+          'artist': item.author,
+          'cover_url': item.thumbnailUrl,
+        });
+        if (isCurrent && mounted) {
+          state = state.copyWith(isFavorite: true);
+        }
+        return true;
+      } else {
         await Supabase.instance.client
             .from('liked_songs')
             .delete()
             .eq('user_id', user.id)
-            .eq('youtube_id', state.current!.id);
-        if (mounted) state = state.copyWith(isFavorite: false);
-      } else {
-        await Supabase.instance.client.from('liked_songs').upsert({
-          'user_id': user.id,
-          'youtube_id': state.current!.id,
-          'title': state.current!.title,
-          'artist': state.current!.author,
-          'cover_url': state.current!.thumbnailUrl,
-        });
-        if (mounted) state = state.copyWith(isFavorite: true);
+            .eq('youtube_id', item.id);
+        if (isCurrent && mounted) {
+          state = state.copyWith(isFavorite: false);
+        }
+        return false;
       }
     } catch (e) {
       debugPrint('[Player] toggleFavorite error: $e');
+      // Rollback jika terjadi error pada lagu saat ini
+      if (isCurrent && mounted) {
+        state = state.copyWith(isFavorite: previousFavorite);
+      }
+      rethrow;
     }
   }
 
@@ -444,17 +489,18 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   // -- Private -----------------------------------------------------------------
 
   Future<void> _playAt(int index) async {
+    final item = state.queue[index];
     state = state.copyWith(
       currentIndex: index,
-      current: state.queue[index],
+      current: item,
+      isFavorite: false,
       isLoading: true,
       clearError: true,
       loadingStatus: 'Mengambil audio…',
     );
-    await _loadAndPlay(state.queue[index]);
-    _checkFavorite().catchError((e) => debugPrint('[Player] checkFavorite: $e'));
-    _saveRecentlyPlayed(state.queue[index])
-        .catchError((e) => debugPrint('[Player] saveRecent: $e'));
+    unawaited(_checkFavorite(item.id));
+    unawaited(_saveRecentlyPlayed(item));
+    await _loadAndPlay(item);
   }
 
   Future<void> _loadAndPlay(MusicItem item) async {
@@ -609,17 +655,20 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     await play([...state.queue, pick], state.queue.length);
   }
 
-  Future<void> _checkFavorite() async {
+  Future<void> _checkFavorite([String? trackId]) async {
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null || state.current == null) return;
+    final idToCheck = trackId ?? state.current?.id;
+    if (user == null || idToCheck == null || idToCheck.isEmpty) return;
     try {
       final data = await Supabase.instance.client
           .from('liked_songs')
           .select('youtube_id')
           .eq('user_id', user.id)
-          .eq('youtube_id', state.current!.id)
+          .eq('youtube_id', idToCheck)
           .maybeSingle();
-      if (mounted) state = state.copyWith(isFavorite: data != null);
+      if (mounted && state.current?.id == idToCheck) {
+        state = state.copyWith(isFavorite: data != null);
+      }
     } catch (_) {}
   }
 

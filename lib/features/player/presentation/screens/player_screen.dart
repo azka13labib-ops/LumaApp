@@ -415,10 +415,59 @@ class PlayerScreen extends ConsumerWidget {
                       AnimatedHeartButton(
                         isLiked: state.isFavorite,
                         size: 26,
-                        activeColor: onSurface,
-                        inactiveColor: onSurface.withOpacity(0.6),
-                        onTap: () =>
-                            ref.read(playerProvider.notifier).toggleFavorite(),
+                        activeColor: const Color(0xFFEF4444),
+                        inactiveColor: onSurface.withValues(alpha: 0.6),
+                        onTap: () async {
+                          try {
+                            final res = await ref
+                                .read(playerProvider.notifier)
+                                .toggleFavorite();
+                            if (context.mounted && res != null) {
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(
+                                        res ? Icons.favorite_rounded : Icons.heart_broken_rounded,
+                                        color: res ? const Color(0xFFEF4444) : Colors.white70,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        res
+                                            ? 'Ditambahkan ke Lagu yang Disukai'
+                                            : 'Dihapus dari Lagu yang Disukai',
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                ),
+                              );
+                            } else if (context.mounted && res == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Silakan login untuk menyukai lagu'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal memperbarui status favorit: $e'),
+                                  backgroundColor: Colors.red.shade900,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
                       ),
                     ],
                   ),

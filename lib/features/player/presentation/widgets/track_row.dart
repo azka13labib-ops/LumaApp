@@ -220,6 +220,34 @@ class TrackRow extends ConsumerWidget {
             ),
             Divider(color: dividerColor, height: 1),
             ListTile(
+              leading: const Icon(Icons.favorite_rounded, color: Color(0xFFEF4444)),
+              title: Text('Sukai / Favoritkan', style: TextStyle(color: textPrimary)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                try {
+                  final res = await ref.read(playerProvider.notifier).toggleFavorite(item);
+                  if (context.mounted && res != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      _modernSnack(
+                        res ? 'Ditambahkan ke Lagu yang Disukai' : 'Dihapus dari Lagu yang Disukai',
+                        isError: false,
+                      ),
+                    );
+                  } else if (context.mounted && res == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      _modernSnack('Silakan login untuk menyukai lagu', isError: true),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      _modernSnack('Gagal menyukai lagu: $e', isError: true),
+                    );
+                  }
+                }
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.playlist_play_rounded, color: iconColor),
               title: Text('Putar Berikutnya', style: TextStyle(color: textPrimary)),
               onTap: () {
