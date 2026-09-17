@@ -344,21 +344,46 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         return true;
       }
       state = state.copyWith(isDownloading: true, downloadingProgress: 0.0);
-      final url = await _yt.resolveStreamUrl(item);
+
+      // 1. Try native YouTube stream URL first
+      String? url = await _yt.resolveStreamUrl(item);
+      url ??= await _yt.resolveStreamUrl(item, forceRapidApi: true);
       if (url == null) {
-        state = state.copyWith(isDownloading: false, downloadingProgress: null);
+        state = state.copyWith(isDownloading: false, downloadingProgress: null,
+            error: 'Gagal mendapatkan URL audio untuk diunduh.');
         return false;
       }
+
       OfflineCacheService.instance.downloadProgress.addListener(_onDownloadProgress);
-      await OfflineCacheService.instance.download(item, url);
+      try {
+        await OfflineCacheService.instance.download(item, url);
+      } catch (downloadErr) {
+        // If native URL download failed (e.g., 403), retry with RapidAPI
+        debugPrint('[Player] Native download failed ($downloadErr), retrying with RapidAPI...');
+        OfflineCacheService.instance.downloadProgress.removeListener(_onDownloadProgress);
+        final fallbackUrl = await _yt.resolveStreamUrl(item, forceRapidApi: true);
+        if (fallbackUrl != null) {
+          OfflineCacheService.instance.downloadProgress.addListener(_onDownloadProgress);
+          await OfflineCacheService.instance.download(item, fallbackUrl);
+        } else {
+          rethrow;
+        }
+      }
       OfflineCacheService.instance.downloadProgress.removeListener(_onDownloadProgress);
+
       if (mounted) {
         state = state.copyWith(isCached: true, isDownloading: false, downloadingProgress: null);
       }
       return true;
     } catch (e) {
-      debugPrint('[Player] download error: $e');
-      state = state.copyWith(isDownloading: false, downloadingProgress: null);
+      debugPrint('[Player] downloadCurrent error: $e');
+      if (mounted) {
+        state = state.copyWith(
+          isDownloading: false,
+          downloadingProgress: null,
+          error: 'Gagal mengunduh: ${e.toString().replaceAll('Exception: ', '')}',
+        );
+      }
       return false;
     }
   }
@@ -374,21 +399,44 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     try {
       if (await OfflineCacheService.instance.isCached(item.id)) return true;
       state = state.copyWith(isDownloading: true, downloadingProgress: 0.0);
-      final url = await _yt.resolveStreamUrl(item);
+
+      // 1. Try native YouTube stream URL first
+      String? url = await _yt.resolveStreamUrl(item);
+      url ??= await _yt.resolveStreamUrl(item, forceRapidApi: true);
       if (url == null) {
         state = state.copyWith(isDownloading: false, downloadingProgress: null);
         return false;
       }
+
       OfflineCacheService.instance.downloadProgress.addListener(_onDownloadProgress);
-      await OfflineCacheService.instance.download(item, url);
+      try {
+        await OfflineCacheService.instance.download(item, url);
+      } catch (downloadErr) {
+        // Retry with RapidAPI if native URL failed
+        debugPrint('[Player] downloadTrack native failed ($downloadErr), retrying RapidAPI...');
+        OfflineCacheService.instance.downloadProgress.removeListener(_onDownloadProgress);
+        final fallbackUrl = await _yt.resolveStreamUrl(item, forceRapidApi: true);
+        if (fallbackUrl != null) {
+          OfflineCacheService.instance.downloadProgress.addListener(_onDownloadProgress);
+          await OfflineCacheService.instance.download(item, fallbackUrl);
+        } else {
+          rethrow;
+        }
+      }
       OfflineCacheService.instance.downloadProgress.removeListener(_onDownloadProgress);
+
       if (mounted && state.current?.id == item.id) {
         state = state.copyWith(isCached: true, isDownloading: false, downloadingProgress: null);
+      } else if (mounted) {
+        // Still clear the downloading state even if it's not the current track
+        state = state.copyWith(isDownloading: false, downloadingProgress: null);
       }
       return true;
     } catch (e) {
       debugPrint('[Player] downloadTrack error: $e');
-      state = state.copyWith(isDownloading: false, downloadingProgress: null);
+      if (mounted) {
+        state = state.copyWith(isDownloading: false, downloadingProgress: null);
+      }
       return false;
     }
   }

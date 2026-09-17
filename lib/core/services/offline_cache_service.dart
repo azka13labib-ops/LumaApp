@@ -13,18 +13,31 @@ class OfflineCacheService {
   OfflineCacheService._();
   static final OfflineCacheService instance = OfflineCacheService._();
 
+  // Dio for general-purpose requests (thumbnails, metadata)
   final Dio _dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(minutes: 8),
+    receiveTimeout: const Duration(minutes: 3),
     followRedirects: true,
     maxRedirects: 5,
     headers: {
-      // YouTube / GoogleVideo CDN requires a browser-like User-Agent;
-      // requests without it return 403 Forbidden.
       'User-Agent':
           'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 '
           '(KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
-      'Range': 'bytes=0-',
+    },
+  ));
+
+  // Dedicated Dio for audio stream downloads with YouTube-specific headers
+  final Dio _audioDio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(minutes: 15),
+    followRedirects: true,
+    maxRedirects: 10,
+    headers: {
+      'User-Agent':
+          'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 '
+          '(KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+      'Referer': 'https://www.youtube.com/',
+      'Origin': 'https://www.youtube.com',
     },
   ));
 
@@ -120,9 +133,17 @@ class OfflineCacheService {
 
     try {
       debugPrint('[Offline] Downloading ${item.title} → ${file.path}');
-      await _dio.download(
+      // Delete partial file if exists from a previous failed attempt
+      if (await file.exists()) await file.delete();
+
+      await _audioDio.download(
         streamUrl,
         file.path,
+        options: Options(
+          // YouTube requires Range header for large audio streams
+          headers: {'Range': 'bytes=0-'},
+          responseType: ResponseType.stream,
+        ),
         onReceiveProgress: (received, total) {
           if (total > 0) {
             final p = (received / total).clamp(0.0, 0.95);
@@ -133,6 +154,12 @@ class OfflineCacheService {
           }
         },
       );
+
+      // Validate that downloaded file has reasonable size (> 10KB)
+      final fileSize = await file.length();
+      if (fileSize < 10240) {
+        throw Exception('File yang didownload terlalu kecil ($fileSize bytes), kemungkinan gagal.');
+      }
 
       // Download cover art image if available
       String? savedThumbPath;
