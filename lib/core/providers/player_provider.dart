@@ -124,16 +124,23 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         );
       }
     });
-    // Swallow async playback errors — just_audio can otherwise surface an
-    // unhandled platform exception that crashes the app mid-stick.
+    // Handle async playback errors cleanly
     _player.errorStream.listen((e) {
       debugPrint('[Player] just_audio errorStream: ${e.code} ${e.message}');
+      if (mounted) {
+        state = state.copyWith(
+          isLoading: false,
+          isPlaying: false,
+          clearLoadingStatus: true,
+          error: 'Pemutaran audio terhenti: ${e.message ?? e.code}',
+        );
+      }
     });
     _player.positionStream.listen((pos) {
-      if (mounted) state = state.copyWith(position: pos);
+      if (mounted && !state.isLoading) state = state.copyWith(position: pos);
     });
     _player.durationStream.listen((dur) {
-      if (mounted && dur != null) state = state.copyWith(duration: dur);
+      if (mounted && dur != null && !state.isLoading) state = state.copyWith(duration: dur);
     });
     _player.playerStateStream.listen((ps) {
       if (!mounted) return;
@@ -143,8 +150,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
           state = state.copyWith(isLoading: false, clearLoadingStatus: true);
         }
       }
-      // When the track finishes, trigger next
-      if (ps.processingState == ProcessingState.completed) {
+      // When the track finishes, trigger next (only if not currently loading a new track)
+      if (ps.processingState == ProcessingState.completed && !state.isLoading) {
         _onTrackCompleted();
       }
     });
@@ -156,12 +163,21 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     if (queue.isEmpty || index < 0 || index >= queue.length) return;
     _orderBackup = List<MusicItem>.from(queue);
     final item = queue[index];
+
+    // Immediately pause existing playback so the previous track stops playing right away
+    if (_player.playing) {
+      unawaited(_player.pause());
+    }
+
     state = state.copyWith(
       queue: queue,
       currentIndex: index,
       current: item,
       isFavorite: false,
       isLoading: true,
+      isPlaying: false,
+      position: Duration.zero,
+      duration: Duration.zero,
       isShuffled: false,
       clearError: true,
       loadingStatus: 'Mengambil audio…',
@@ -490,11 +506,20 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
   Future<void> _playAt(int index) async {
     final item = state.queue[index];
+
+    // Immediately pause existing playback so previous track stops playing right away
+    if (_player.playing) {
+      unawaited(_player.pause());
+    }
+
     state = state.copyWith(
       currentIndex: index,
       current: item,
       isFavorite: false,
       isLoading: true,
+      isPlaying: false,
+      position: Duration.zero,
+      duration: Duration.zero,
       clearError: true,
       loadingStatus: 'Mengambil audio…',
     );
@@ -533,17 +558,24 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       try {
         realSource = await _yt.getAudioSource(item, quality: quality);
+        if (!mounted || myId != _loadId) return;
         if (realSource == null) throw Exception('Stream utama tidak tersedia');
         await _player.setAudioSource(realSource);
       } catch (primaryErr) {
-        debugPrint('[Player] Primary audio source failed ($primaryErr), trying RapidAPI fallback...');
         if (!mounted || myId != _loadId) return;
+        debugPrint('[Player] Primary audio source failed ($primaryErr), trying RapidAPI fallback...');
         state = state.copyWith(loadingStatus: 'Mencoba server cadangan…');
-        realSource = await _yt.getAudioSource(item, quality: quality, forceRapidApi: true);
-        if (realSource == null) {
-          throw Exception('Tidak dapat memuat audio dari server utama maupun cadangan: $primaryErr');
+        try {
+          realSource = await _yt.getAudioSource(item, quality: quality, forceRapidApi: true);
+          if (!mounted || myId != _loadId) return;
+          if (realSource == null) {
+            throw Exception('Stream cadangan tidak tersedia');
+          }
+          await _player.setAudioSource(realSource);
+        } catch (fallbackErr) {
+          if (!mounted || myId != _loadId) return;
+          throw Exception('Gagal memuat audio: $primaryErr');
         }
-        await _player.setAudioSource(realSource);
       }
 
       if (!mounted || myId != _loadId) return;
@@ -577,10 +609,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       debugPrint('[Player] _loadAndPlay error: $e');
       state = state.copyWith(
         isLoading: false,
+        isPlaying: false,
         isDownloading: false,
         downloadingProgress: null,
         clearLoadingStatus: true,
-        error: 'Gagal memutar audio: $e',
+        error: 'Gagal memutar audio: ${e.toString().replaceAll('Exception: ', '')}',
       );
     }
   }

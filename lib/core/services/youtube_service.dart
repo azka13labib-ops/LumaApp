@@ -230,17 +230,14 @@ class YouTubeService {
       try {
         debugPrint('[LumaApp] Resolving native stream for: $cleanId with quality: ${quality.name}');
         final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
-        final streams = manifest.audioOnly.toList();
-
+        final audioStreams = manifest.audioOnly.toList();
         AudioStreamInfo audioStream;
-        if (streams.isEmpty) {
-          audioStream = manifest.audioOnly.withHighestBitrate();
-        } else {
+        if (audioStreams.isNotEmpty) {
           // Prioritize MP4/AAC for universal Android device playback
-          final mp4Streams = streams
+          final mp4Streams = audioStreams
               .where((s) => s.container.name.toLowerCase() == 'mp4')
               .toList();
-          final pool = mp4Streams.isNotEmpty ? mp4Streams : streams;
+          final pool = mp4Streams.isNotEmpty ? mp4Streams : audioStreams;
           pool.sort((a, b) => a.bitrate.compareTo(b.bitrate));
 
           audioStream = switch (quality) {
@@ -249,6 +246,11 @@ class YouTubeService {
               pool.length > 1 ? pool[pool.length ~/ 2] : pool.first,
             AudioQuality.high || AudioQuality.auto => pool.last,
           };
+        } else if (manifest.muxed.isNotEmpty) {
+          // Fallback to muxed stream if audio-only is unavailable
+          audioStream = manifest.muxed.withHighestBitrate();
+        } else {
+          throw Exception('Tidak ada stream audio yang valid');
         }
 
         debugPrint('[LumaApp] Native stream resolved: ${audioStream.bitrate} ${audioStream.container.name}');
@@ -326,6 +328,8 @@ class YouTubeService {
         headers: {
           'User-Agent':
               'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+          'Referer': 'https://www.youtube.com/',
+          'Origin': 'https://www.youtube.com',
           'Range': 'bytes=0-',
         },
         tag: _mediaTag(item),
